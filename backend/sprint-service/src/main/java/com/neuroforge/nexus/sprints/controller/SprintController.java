@@ -73,4 +73,20 @@ public class SprintController {
         sprintService.deleteSprint(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{id}/start")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZATION_OWNER', 'TEAM_LEAD')")
+    @Operation(summary = "Start a sprint (sets status to ACTIVE)")
+    public ResponseEntity<SprintResponse> startSprint(@PathVariable("id") String id) {
+        log.info("REST request to start sprint: {}", id);
+        return ResponseEntity.ok(sprintService.startSprint(id));
+    }
+
+    @PostMapping("/{id}/complete")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZATION_OWNER', 'TEAM_LEAD')")
+    @Operation(summary = "Complete a sprint (sets status to COMPLETED and rolls incomplete tasks to backlog)")
+    public ResponseEntity<SprintResponse> completeSprint(@PathVariable("id") String id) {
+        log.info("REST request to complete sprint: {}", id);
+        return ResponseEntity.ok(sprintService.completeSprint(id));
+    }
 }

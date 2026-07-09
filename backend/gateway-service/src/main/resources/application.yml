@@ -22,7 +22,7 @@ spring:
         - id: sprint-service
           uri: http://localhost:8083
           predicates:
-            - Path=/api/v1/sprints/**
+            - Path=/api/v1/sprints/**, /api/v1/tasks/**, /api/v1/blockers/**, /api/v1/comments/**, /api/v1/analytics/**
       globalcors:
         cors-configurations:
           '[/**]':

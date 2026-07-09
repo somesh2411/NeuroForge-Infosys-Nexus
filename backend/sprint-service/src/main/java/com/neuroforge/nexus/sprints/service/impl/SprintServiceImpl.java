@@ -7,14 +7,19 @@ import com.neuroforge.nexus.sprints.domain.Project;
 import com.neuroforge.nexus.sprints.domain.Sprint;
 import com.neuroforge.nexus.sprints.dto.SprintRequest;
 import com.neuroforge.nexus.sprints.dto.SprintResponse;
+import com.neuroforge.nexus.sprints.domain.ActivityLog;
+import com.neuroforge.nexus.sprints.domain.Task;
 import com.neuroforge.nexus.sprints.repository.ProjectRepository;
 import com.neuroforge.nexus.sprints.repository.SprintRepository;
+import com.neuroforge.nexus.sprints.repository.TaskRepository;
+import com.neuroforge.nexus.sprints.repository.ActivityLogRepository;
 import com.neuroforge.nexus.sprints.service.SprintService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -26,6 +31,8 @@ public class SprintServiceImpl implements SprintService {
 
     private final SprintRepository sprintRepository;
     private final ProjectRepository projectRepository;
+    private final TaskRepository taskRepository;
+    private final ActivityLogRepository activityLogRepository;
     private final SprintMapper sprintMapper;
 
     @Override
@@ -119,5 +126,80 @@ public class SprintServiceImpl implements SprintService {
 
         sprint.softDelete(SecurityUtils.getCurrentUserId());
         sprintRepository.save(sprint);
+    }
+
+    @Override
+    @Transactional
+    public SprintResponse startSprint(String id) {
+        log.info("Starting sprint: {}", id);
+        Sprint sprint = sprintRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sprint not found with id: " + id));
+
+        // Enforce that only one active sprint exists per project
+        List<Sprint> projectSprints = sprintRepository.findByProjectId(sprint.getProject().getId());
+        boolean hasActiveSprint = projectSprints.stream()
+                .anyMatch(s -> s.getStatus().equalsIgnoreCase("ACTIVE"));
+        if (hasActiveSprint) {
+            throw new IllegalArgumentException("Cannot start sprint: There is already an active sprint in this project.");
+        }
+
+        sprint.setStatus("ACTIVE");
+        sprint.setStartDate(LocalDateTime.now());
+        Sprint saved = sprintRepository.save(sprint);
+
+        // Log activity
+        ActivityLog logEntry = new ActivityLog();
+        logEntry.setId(UUID.randomUUID().toString());
+        logEntry.setSprintId(sprint.getId());
+        logEntry.setEventType("SPRINT_STARTED");
+        logEntry.setMessage("Sprint '" + sprint.getName() + "' has been started.");
+        logEntry.setActor(SecurityUtils.getCurrentUserId());
+        activityLogRepository.save(logEntry);
+
+        return sprintMapper.toResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public SprintResponse completeSprint(String id) {
+        log.info("Completing sprint: {}", id);
+        Sprint sprint = sprintRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sprint not found with id: " + id));
+
+        sprint.setStatus("COMPLETED");
+        sprint.setEndDate(LocalDateTime.now());
+        Sprint saved = sprintRepository.save(sprint);
+
+        // Roll over unfinished tasks to backlog (sprintId = null)
+        List<Task> tasks = taskRepository.findBySprintId(id);
+        int rolledOverCount = 0;
+        for (Task task : tasks) {
+            if (!task.getStatus().equalsIgnoreCase("DONE")) {
+                task.setSprint(null);
+                taskRepository.save(task);
+                rolledOverCount++;
+
+                // Log task rollover
+                ActivityLog taskLog = new ActivityLog();
+                taskLog.setId(UUID.randomUUID().toString());
+                taskLog.setTaskId(task.getId());
+                taskLog.setSprintId(id);
+                taskLog.setEventType("TASK_ROLLED_OVER");
+                taskLog.setMessage("Task rolled over to backlog upon sprint completion.");
+                taskLog.setActor("system");
+                activityLogRepository.save(taskLog);
+            }
+        }
+
+        // Log sprint completion activity
+        ActivityLog logEntry = new ActivityLog();
+        logEntry.setId(UUID.randomUUID().toString());
+        logEntry.setSprintId(sprint.getId());
+        logEntry.setEventType("SPRINT_COMPLETED");
+        logEntry.setMessage("Sprint '" + sprint.getName() + "' completed. " + rolledOverCount + " unfinished tasks rolled to backlog.");
+        logEntry.setActor(SecurityUtils.getCurrentUserId());
+        activityLogRepository.save(logEntry);
+
+        return sprintMapper.toResponse(saved);
     }
 }

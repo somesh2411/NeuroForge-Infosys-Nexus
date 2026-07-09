@@ -1,122 +1,758 @@
-<div class="page-container">
-  <div class="page-header">
-    <div class="header-left">
-      <h1 class="page-title">Sprint Planning</h1>
-      <p class="page-subtitle">Schedule project sprints, target goals, and configure story capacity</p>
-      
-      <!-- Project Selection Dropdown in header -->
-      <div class="project-selector-container">
-        <mat-form-field appearance="outline" class="project-select-field">
-          <mat-label>Select Project</mat-label>
-          <mat-select [value]="selectedProject?.id" (selectionChange)="selectProject($event.value)">
-            <mat-option *ngFor="let p of projects" [value]="p.id">
-              {{ p.name }} ({{ p.key }})
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-    </div>
-    
-    <button *ngIf="selectedProject && (authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD'))"
-            class="action-btn" (click)="toggleSprintForm(false)">
-      <mat-icon>add</mat-icon> Schedule Sprint
-    </button>
+<div class="page-container" [class.loading-shield]="loading">
+  <!-- Loading Indicator -->
+  <div class="spinner-container" *ngIf="loading">
+    <div class="glow-spinner"></div>
   </div>
 
-  <!-- Create / Edit Sprint Form Card -->
-  <mat-card class="form-card" *ngIf="showForm">
-    <mat-card-header>
-      <mat-card-title>{{ isEdit ? 'Modify Sprint Parameters' : 'Schedule New Sprint Cycle' }}</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <form [formGroup]="sprintForm" (ngSubmit)="saveSprint()" class="sprint-form">
-        <mat-form-field appearance="outline">
-          <mat-label>Sprint Name</mat-label>
-          <input matInput formControlName="name" placeholder="e.g. Sprint 1 - Core Auth">
-          <mat-error>Name is required</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Sprint Goal</mat-label>
-          <textarea matInput formControlName="goal" rows="2" placeholder="Define clear goals for the team"></textarea>
-        </mat-form-field>
-
-        <div class="date-row">
-          <mat-form-field appearance="outline">
-            <mat-label>Start Date</mat-label>
-            <input matInput type="datetime-local" formControlName="startDate">
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>End Date</mat-label>
-            <input matInput type="datetime-local" formControlName="endDate">
+  <!-- VIEW 1: SPRINTS SCHEDULING LIST (IF NOT IN WORKSPACE) -->
+  <ng-container *ngIf="!selectedSprintWorkspace">
+    <div class="page-header">
+      <div class="header-left">
+        <h1 class="page-title">Sprint Planning</h1>
+        <p class="page-subtitle">Schedule project sprints, target goals, and configure story capacity</p>
+        
+        <!-- Project Selection Dropdown in header -->
+        <div class="project-selector-container">
+          <mat-form-field appearance="outline" class="project-select-field">
+            <mat-label>Select Project</mat-label>
+            <mat-select [value]="selectedProject?.id" (selectionChange)="selectProject($event.value)">
+              <mat-option *ngFor="let p of projects" [value]="p.id">
+                {{ p.name }} ({{ p.key }})
+              </mat-option>
+            </mat-select>
           </mat-form-field>
         </div>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Story Points Capacity</mat-label>
-          <input matInput type="number" formControlName="capacity">
-          <mat-error>Capacity must be 0 or greater</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" *ngIf="isEdit">
-          <mat-label>Status</mat-label>
-          <mat-select formControlName="status">
-            <mat-option value="PLANNED">PLANNED</mat-option>
-            <mat-option value="ACTIVE">ACTIVE</mat-option>
-            <mat-option value="COMPLETED">COMPLETED</mat-option>
-          </mat-select>
-        </mat-form-field>
-
-        <div class="form-actions">
-          <button type="button" class="action-btn-secondary" (click)="toggleSprintForm()">Cancel</button>
-          <button type="submit" class="action-btn" [disabled]="sprintForm.invalid">Schedule</button>
-        </div>
-      </form>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- Sprints List Layout -->
-  <div class="sprints-grid" *ngIf="!showForm">
-    <div *ngIf="sprints.length === 0" class="empty-state">
-      No sprints scheduled for this project.
+      </div>
+      
+      <button *ngIf="selectedProject && (authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD'))"
+              class="action-btn" (click)="toggleSprintForm(false)">
+        <mat-icon>add</mat-icon> Schedule Sprint
+      </button>
     </div>
 
-    <mat-card class="sprint-card" *ngFor="let s of sprints">
+    <!-- Create / Edit Sprint Form Card -->
+    <mat-card class="form-card" *ngIf="showForm">
+      <mat-card-header>
+        <mat-card-title>{{ isEdit ? 'Modify Sprint Parameters' : 'Schedule New Sprint Cycle' }}</mat-card-title>
+      </mat-card-header>
       <mat-card-content>
-        <div class="sprint-card-header">
-          <div>
-            <span class="badge" [class.badge-planned]="s.status === 'PLANNED'" [class.badge-active]="s.status === 'ACTIVE'" [class.badge-completed]="s.status === 'COMPLETED'">
-              {{ s.status }}
-            </span>
-            <h3>{{ s.name }}</h3>
-          </div>
-          <div class="action-icons" *ngIf="authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD')">
-            <button mat-icon-button color="primary" (click)="toggleSprintForm(true, s)">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button color="warn" (click)="deleteSprint(s.id)">
-              <mat-icon>delete_outline</mat-icon>
-            </button>
-          </div>
-        </div>
+        <form [formGroup]="sprintForm" (ngSubmit)="saveSprint()" class="sprint-form">
+          <mat-form-field appearance="outline">
+            <mat-label>Sprint Name</mat-label>
+            <input matInput formControlName="name" placeholder="e.g. Sprint 1 - Core Auth">
+            <mat-error>Name is required</mat-error>
+          </mat-form-field>
 
-        <div class="sprint-goal-section" *ngIf="s.goal">
-          <h4>Goal:</h4>
-          <p>{{ s.goal }}</p>
-        </div>
+          <mat-form-field appearance="outline">
+            <mat-label>Sprint Goal</mat-label>
+            <textarea matInput formControlName="goal" rows="2" placeholder="Define clear goals for the team"></textarea>
+          </mat-form-field>
 
-        <div class="sprint-details-meta">
-          <div class="meta-item">
-            <mat-icon>calendar_today</mat-icon>
-            <span>{{ s.startDate | date:'mediumDate' }} - {{ s.endDate | date:'mediumDate' }}</span>
+          <div class="date-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Start Date</mat-label>
+              <input matInput type="datetime-local" formControlName="startDate">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>End Date</mat-label>
+              <input matInput type="datetime-local" formControlName="endDate">
+            </mat-form-field>
           </div>
-          <div class="meta-item">
-            <mat-icon>bolt</mat-icon>
-            <span>Capacity: {{ s.capacity }} Story Points</span>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Story Points Capacity</mat-label>
+            <input matInput type="number" formControlName="capacity">
+            <mat-error>Capacity must be 0 or greater</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" *ngIf="isEdit">
+            <mat-label>Status</mat-label>
+            <mat-select formControlName="status">
+              <mat-option value="PLANNED">PLANNED</mat-option>
+              <mat-option value="ACTIVE">ACTIVE</mat-option>
+              <mat-option value="COMPLETED">COMPLETED</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="form-actions">
+            <button type="button" class="action-btn-secondary" (click)="toggleSprintForm()">Cancel</button>
+            <button type="submit" class="action-btn" [disabled]="sprintForm.invalid">Schedule</button>
           </div>
-        </div>
+        </form>
       </mat-card-content>
     </mat-card>
+
+    <!-- Sprints List Layout -->
+    <div class="sprints-grid" *ngIf="!showForm">
+      <div *ngIf="sprints.length === 0" class="empty-state">
+        No sprints scheduled for this project.
+      </div>
+
+      <mat-card class="sprint-card" *ngFor="let s of sprints">
+        <mat-card-content>
+          <div class="sprint-card-header">
+            <div>
+              <span class="badge" [class.badge-planned]="s.status === 'PLANNED'" [class.badge-active]="s.status === 'ACTIVE'" [class.badge-completed]="s.status === 'COMPLETED'">
+                {{ s.status }}
+              </span>
+              <h3>{{ s.name }}</h3>
+            </div>
+            <div class="sprint-card-actions">
+              <button class="action-btn-workspace" (click)="openSprintWorkspace(s)">
+                <mat-icon>launch</mat-icon> Open Workspace
+              </button>
+              <div class="action-icons" *ngIf="authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD')">
+                <button mat-icon-button color="primary" (click)="toggleSprintForm(true, s)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="deleteSprint(s.id)">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="sprint-goal-section" *ngIf="s.goal">
+            <h4>Goal:</h4>
+            <p>{{ s.goal }}</p>
+          </div>
+
+          <div class="sprint-details-meta">
+            <div class="meta-item">
+              <mat-icon>calendar_today</mat-icon>
+              <span>{{ s.startDate | date:'mediumDate' }} - {{ s.endDate | date:'mediumDate' }}</span>
+            </div>
+            <div class="meta-item">
+              <mat-icon>bolt</mat-icon>
+              <span>Capacity: {{ s.capacity }} Story Points</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </ng-container>
+
+  <!-- VIEW 2: SPRINT EXECUTION WORKSPACE -->
+  <ng-container *ngIf="selectedSprintWorkspace">
+    <!-- Workspace Header -->
+    <div class="workspace-header">
+      <div class="header-left">
+        <div class="workspace-nav-back">
+          <button (click)="closeWorkspace()" class="back-link-btn">
+            <mat-icon>arrow_back</mat-icon> Back to Sprints
+          </button>
+        </div>
+        <div class="workspace-title-row">
+          <span class="badge" [class.badge-planned]="selectedSprintWorkspace.status === 'PLANNED'" [class.badge-active]="selectedSprintWorkspace.status === 'ACTIVE'" [class.badge-completed]="selectedSprintWorkspace.status === 'COMPLETED'">
+            {{ selectedSprintWorkspace.status }}
+          </span>
+          <h2 class="workspace-title">{{ selectedSprintWorkspace.name }}</h2>
+        </div>
+        <p class="workspace-goal" *ngIf="selectedSprintWorkspace.goal">
+          <strong>Goal:</strong> {{ selectedSprintWorkspace.goal }}
+        </p>
+      </div>
+
+      <!-- Start / Complete Actions -->
+      <div class="header-right" *ngIf="authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD')">
+        <button *ngIf="selectedSprintWorkspace.status === 'PLANNED'" 
+                class="action-btn" (click)="startSprintWorkspace()">
+          <mat-icon>play_arrow</mat-icon> Start Sprint
+        </button>
+        <button *ngIf="selectedSprintWorkspace.status === 'ACTIVE'" 
+                class="action-btn-success" (click)="completeSprintWorkspace()">
+          <mat-icon>check_circle_outline</mat-icon> Complete Sprint
+        </button>
+      </div>
+    </div>
+
+    <!-- Workspace Tabs Navigation -->
+    <mat-tab-group class="workspace-tabs" [(selectedIndex)]="activeWorkspaceTab">
+      
+      <!-- TAB 1: SPRINT BACKLOG PLANNER -->
+      <mat-tab label="Sprint Backlog">
+        <div class="backlog-tab-container">
+          
+          <!-- LEFT PANEL: SPRINT SCOPE -->
+          <div class="sprint-scope-panel">
+            <div class="panel-header">
+              <h3>Sprint Backlog Scope</h3>
+              <span class="capacity-total" *ngIf="sprintMetrics">
+                SP Assigned: {{ sprintMetrics.totalStoryPoints }} / {{ selectedSprintWorkspace.capacity }}
+              </span>
+            </div>
+
+            <!-- Capacity Progress Bar -->
+            <div class="capacity-meter" *ngIf="sprintMetrics">
+              <mat-progress-bar mode="determinate" 
+                                [value]="(sprintMetrics.totalStoryPoints / selectedSprintWorkspace.capacity) * 100"
+                                [color]="sprintMetrics.totalStoryPoints > selectedSprintWorkspace.capacity ? 'warn' : 'primary'">
+              </mat-progress-bar>
+              <div class="meter-labels">
+                <span>0 SP</span>
+                <span class="limit" [class.exceeded]="sprintMetrics.totalStoryPoints > selectedSprintWorkspace.capacity">
+                  Limit: {{ selectedSprintWorkspace.capacity }} SP
+                </span>
+              </div>
+            </div>
+
+            <!-- Sprint Tasks List -->
+            <div class="task-list-wrapper">
+              <div *ngIf="workspaceTasks.length === 0" class="empty-state-list">
+                <mat-icon class="huge-icon">folder_open</mat-icon>
+                <p>No tasks assigned to this sprint. Drag tasks from the backlog below or move them using the action.</p>
+              </div>
+
+              <div class="backlog-task-item" *ngFor="let t of workspaceTasks" (click)="openTaskDetails(t)">
+                <div class="task-left">
+                  <span class="priority-indicator" [class]="t.priority.toLowerCase()"></span>
+                  <div class="task-info">
+                    <span class="task-title-text">{{ t.title }}</span>
+                    <span class="task-meta-text">Assignee: {{ t.assignedDeveloperName }}</span>
+                  </div>
+                </div>
+                <div class="task-right">
+                  <span class="sp-badge">{{ t.storyPoints }} SP</span>
+                  <button mat-icon-button color="warn" (click)="$event.stopPropagation(); moveTaskToSprint(t, null)" matTooltip="Remove from Sprint">
+                    <mat-icon>arrow_downward</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT PANEL: PROJECT BACKLOG POOL -->
+          <div class="project-backlog-panel">
+            <div class="panel-header-row">
+              <h3>Project Backlog Pool</h3>
+              <button class="action-btn-sm" (click)="openCreateTaskModal(true)">
+                <mat-icon>add</mat-icon> Create Backlog Task
+              </button>
+            </div>
+
+            <!-- Search, Filtering and Sorting Controls -->
+            <div class="filter-controls-row">
+              <input type="text" [(ngModel)]="taskSearchQuery" (input)="sortAndFilterWorkspaceTasks()" placeholder="Search title..." class="search-input">
+              
+              <select [(ngModel)]="taskPriorityFilter" (change)="sortAndFilterWorkspaceTasks()" class="filter-select">
+                <option value="">All Priorities</option>
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="CRITICAL">Critical</option>
+              </select>
+
+              <select [(ngModel)]="taskSortBy" (change)="sortAndFilterWorkspaceTasks()" class="filter-select">
+                <option value="createdAt">Date Created</option>
+                <option value="title">Task Title</option>
+                <option value="storyPoints">Story Points</option>
+                <option value="priority">Priority</option>
+              </select>
+            </div>
+
+            <!-- Backlog Pool Tasks -->
+            <div class="backlog-pool-wrapper">
+              <div *ngIf="projectBacklogTasks.length === 0" class="empty-state-list">
+                <p>No backlog tasks available for this project.</p>
+              </div>
+
+              <div class="backlog-task-item backlog-item" *ngFor="let t of projectBacklogTasks" (click)="openTaskDetails(t)">
+                <div class="task-left">
+                  <span class="priority-indicator" [class]="t.priority.toLowerCase()"></span>
+                  <div class="task-info">
+                    <span class="task-title-text">{{ t.title }}</span>
+                    <span class="task-meta-text">Assignee: {{ t.assignedDeveloperName }}</span>
+                  </div>
+                </div>
+                <div class="task-right">
+                  <span class="sp-badge">{{ t.storyPoints }} SP</span>
+                  <button mat-icon-button color="primary" (click)="$event.stopPropagation(); moveTaskToSprint(t, selectedSprintWorkspace.id)" matTooltip="Add to Active Sprint">
+                    <mat-icon>arrow_upward</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </mat-tab>
+
+      <!-- TAB 2: AGILITY KANBAN BOARD -->
+      <mat-tab label="Kanban Board">
+        <div class="kanban-container" cdkDropListGroup>
+          
+          <!-- COLUMN 1: TO DO -->
+          <div class="kanban-column">
+            <div class="column-header">
+              <h4>TO DO</h4>
+              <span class="card-count">{{ todoTasks.length }}</span>
+            </div>
+            <div cdkDropList [cdkDropListData]="todoTasks" (cdkDropListDropped)="onTaskDropped($event, 'TO_DO')" class="column-list">
+              <div class="kanban-card" *ngFor="let t of todoTasks" cdkDrag (click)="openTaskDetails(t)">
+                <div class="card-labels" *ngIf="t.labels">
+                  <span class="card-label" *ngFor="let label of t.labels.split(',')">{{ label }}</span>
+                </div>
+                <h5 class="card-title">{{ t.title }}</h5>
+                <div class="card-footer">
+                  <span class="card-assignee">
+                    <mat-icon>account_circle</mat-icon> {{ t.assignedDeveloperName }}
+                  </span>
+                  <div class="card-badges">
+                    <span class="priority-tag" [class]="t.priority.toLowerCase()">{{ t.priority }}</span>
+                    <span class="points-tag">{{ t.storyPoints }} SP</span>
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="todoTasks.length === 0" class="lane-empty">Empty</div>
+            </div>
+          </div>
+
+          <!-- COLUMN 2: IN PROGRESS -->
+          <div class="kanban-column">
+            <div class="column-header">
+              <h4>IN PROGRESS</h4>
+              <span class="card-count">{{ inProgressTasks.length }}</span>
+            </div>
+            <div cdkDropList [cdkDropListData]="inProgressTasks" (cdkDropListDropped)="onTaskDropped($event, 'IN_PROGRESS')" class="column-list">
+              <div class="kanban-card" *ngFor="let t of inProgressTasks" cdkDrag (click)="openTaskDetails(t)">
+                <div class="card-labels" *ngIf="t.labels">
+                  <span class="card-label" *ngFor="let label of t.labels.split(',')">{{ label }}</span>
+                </div>
+                <h5 class="card-title">{{ t.title }}</h5>
+                <div class="card-footer">
+                  <span class="card-assignee">
+                    <mat-icon>account_circle</mat-icon> {{ t.assignedDeveloperName }}
+                  </span>
+                  <div class="card-badges">
+                    <span class="priority-tag" [class]="t.priority.toLowerCase()">{{ t.priority }}</span>
+                    <span class="points-tag">{{ t.storyPoints }} SP</span>
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="inProgressTasks.length === 0" class="lane-empty">Empty</div>
+            </div>
+          </div>
+
+          <!-- COLUMN 3: TESTING / CODE REVIEW -->
+          <div class="kanban-column">
+            <div class="column-header">
+              <h4>TESTING</h4>
+              <span class="card-count">{{ testingTasks.length }}</span>
+            </div>
+            <div cdkDropList [cdkDropListData]="testingTasks" (cdkDropListDropped)="onTaskDropped($event, 'TESTING')" class="column-list">
+              <div class="kanban-card" *ngFor="let t of testingTasks" cdkDrag (click)="openTaskDetails(t)">
+                <div class="card-labels" *ngIf="t.labels">
+                  <span class="card-label" *ngFor="let label of t.labels.split(',')">{{ label }}</span>
+                </div>
+                <h5 class="card-title">{{ t.title }}</h5>
+                <div class="card-footer">
+                  <span class="card-assignee">
+                    <mat-icon>account_circle</mat-icon> {{ t.assignedDeveloperName }}
+                  </span>
+                  <div class="card-badges">
+                    <span class="priority-tag" [class]="t.priority.toLowerCase()">{{ t.priority }}</span>
+                    <span class="points-tag">{{ t.storyPoints }} SP</span>
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="testingTasks.length === 0" class="lane-empty">Empty</div>
+            </div>
+          </div>
+
+          <!-- COLUMN 4: DONE -->
+          <div class="kanban-column col-done">
+            <div class="column-header">
+              <h4>DONE</h4>
+              <span class="card-count">{{ doneTasks.length }}</span>
+            </div>
+            <div cdkDropList [cdkDropListData]="doneTasks" (cdkDropListDropped)="onTaskDropped($event, 'DONE')" class="column-list">
+              <div class="kanban-card done-card" *ngFor="let t of doneTasks" cdkDrag (click)="openTaskDetails(t)">
+                <div class="card-labels" *ngIf="t.labels">
+                  <span class="card-label" *ngFor="let label of t.labels.split(',')">{{ label }}</span>
+                </div>
+                <h5 class="card-title">{{ t.title }}</h5>
+                <div class="card-footer">
+                  <span class="card-assignee">
+                    <mat-icon>account_circle</mat-icon> {{ t.assignedDeveloperName }}
+                  </span>
+                  <div class="card-badges">
+                    <span class="priority-tag pr-done">DONE</span>
+                    <span class="points-tag">{{ t.storyPoints }} SP</span>
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="doneTasks.length === 0" class="lane-empty">Empty</div>
+            </div>
+          </div>
+
+        </div>
+      </mat-tab>
+
+      <!-- TAB 3: ANALYTICS & TIMELINE -->
+      <mat-tab label="Analytics & Timeline">
+        <div class="analytics-tab-container">
+          
+          <!-- Left: Numerical Widgets & Activity Timeline -->
+          <div class="analytics-left">
+            <!-- Numerical metrics grid -->
+            <div class="metrics-dashboard-grid" *ngIf="sprintMetrics">
+              <div class="metric-card">
+                <span class="label">Task Completion Ratio</span>
+                <span class="val">{{ sprintMetrics.completedTasks }} / {{ sprintMetrics.totalTasks }} Tasks</span>
+                <span class="subtext">Pending: {{ sprintMetrics.remainingTasks }}</span>
+              </div>
+              <div class="metric-card">
+                <span class="label">Story Points Burndown</span>
+                <span class="val">{{ sprintMetrics.completedStoryPoints }} / {{ sprintMetrics.totalStoryPoints }} SP</span>
+                <span class="subtext">Remaining: {{ sprintMetrics.remainingStoryPoints }} SP</span>
+              </div>
+              <div class="metric-card">
+                <span class="label">Sprint Progress</span>
+                <span class="val">{{ sprintMetrics.progressPercentage | number:'1.0-1' }}%</span>
+                <div class="widget-progress">
+                  <mat-progress-bar mode="determinate" [value]="sprintMetrics.progressPercentage"></mat-progress-bar>
+                </div>
+              </div>
+            </div>
+
+            <!-- Activity Logs Timeline -->
+            <div class="timeline-container">
+              <h3>Sprint Activity Audit Trail</h3>
+              <div class="activity-timeline">
+                <div *ngIf="sprintActivities.length === 0" class="empty-state-text">
+                  No activity recorded for this sprint yet.
+                </div>
+                <div class="timeline-item" *ngFor="let act of sprintActivities">
+                  <div class="time-marker">
+                    <span class="dot" [class]="act.eventType.toLowerCase()"></span>
+                    <span class="time">{{ act.timestamp | date:'shortTime' }}</span>
+                  </div>
+                  <div class="activity-body">
+                    <span class="actor"><strong>User:</strong> {{ act.actor }}</span>
+                    <p class="message">{{ act.message }}</p>
+                    <span class="date">{{ act.timestamp | date:'mediumDate' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Visual Charts (Burndown & Velocity) -->
+          <div class="analytics-right">
+            <!-- Burndown Chart -->
+            <div class="chart-container">
+              <h3>Active Sprint Burndown Chart</h3>
+              <div class="svg-chart-wrapper">
+                <svg *ngIf="burndownPoints.length > 0" width="100%" height="300" viewBox="0 0 600 300" class="burndown-svg">
+                  <!-- Grid Lines -->
+                  <g class="grid-lines">
+                    <line *ngFor="let g of burndownGridLines" x1="40" [attr.y1]="g.y" x2="560" [attr.y2]="g.y" stroke="#2a2f3a" stroke-dasharray="3,3" />
+                    <!-- Labels -->
+                    <text *ngFor="let g of burndownGridLines" x="35" [attr.y]="g.y + 4" fill="#a0aec0" text-anchor="end" font-size="10">{{ g.label }} SP</text>
+                  </g>
+
+                  <!-- X Labels -->
+                  <g class="x-axis-labels">
+                    <line x1="40" y1="260" x2="560" y2="260" stroke="#4a5568" stroke-width="2" />
+                    <text *ngFor="let xl of burndownXLabels" [attr.x]="xl.x" y="278" fill="#a0aec0" text-anchor="middle" font-size="10">{{ xl.label }}</text>
+                  </g>
+
+                  <!-- Ideal Line (Dashed Purple) -->
+                  <polyline fill="none" stroke="#a855f7" stroke-width="3" [attr.points]="idealBurndownLine" stroke-dasharray="5,5" />
+                  
+                  <!-- Actual Line (Solid Blue) -->
+                  <polyline fill="none" stroke="#3b82f6" stroke-width="4" [attr.points]="actualBurndownLine" />
+
+                  <!-- Legend -->
+                  <g class="legend" transform="translate(420, 20)">
+                    <rect x="0" y="0" width="12" height="12" fill="#a855f7" />
+                    <text x="18" y="10" fill="#a0aec0" font-size="10">Ideal Burndown</text>
+                    <rect x="0" y="18" width="12" height="12" fill="#3b82f6" />
+                    <text x="18" y="28" fill="#a0aec0" font-size="10">Actual Burndown</text>
+                  </g>
+                </svg>
+                <div *ngIf="burndownPoints.length === 0" class="chart-empty">
+                  No burndown coordinates calculated. Enable start dates and add story points.
+                </div>
+              </div>
+            </div>
+
+            <!-- Velocity Chart -->
+            <div class="chart-container">
+              <h3>Historical Sprint Velocity Report</h3>
+              <div class="svg-chart-wrapper">
+                <svg *ngIf="velocityPoints.length > 0" width="100%" height="300" viewBox="0 0 600 300" class="velocity-svg">
+                  <!-- Bars -->
+                  <g class="bars">
+                    <g *ngFor="let b of velocityBars" class="bar-group">
+                      <!-- Render Bar -->
+                      <rect [attr.x]="b.x" [attr.y]="b.y" width="40" [attr.height]="b.height" fill="url(#velocityGrad)" rx="4" ry="4" />
+                      <!-- Score text on top of bar -->
+                      <text [attr.x]="b.x + 20" [attr.y]="b.y - 8" fill="#fff" font-weight="bold" font-size="11" text-anchor="middle">{{ b.points }} SP</text>
+                      <!-- Sprint name label under bar -->
+                      <text [attr.x]="b.x + 20" y="278" fill="#a0aec0" font-size="10" text-anchor="middle">{{ b.label }}</text>
+                    </g>
+                    <!-- X-Axis Line -->
+                    <line x1="45" y1="255" x2="555" y2="255" stroke="#4a5568" stroke-width="2" />
+                  </g>
+
+                  <!-- Gradient Definitions -->
+                  <defs>
+                    <linearGradient id="velocityGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#ec4899" />
+                      <stop offset="100%" stop-color="#8b5cf6" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div *ngIf="velocityPoints.length === 0" class="chart-empty">
+                  No historical velocity records. Sprints must be completed first.
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+  </ng-container>
+
+  <!-- MODAL OVERLAY: TASK FORM (CREATE / EDIT TASK) -->
+  <div class="modal-overlay" *ngIf="showTaskFormModal" (click)="closeTaskFormModal()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ isTaskEdit ? 'Update Task Parameters' : 'Create Project Task' }}</h3>
+        <button (click)="closeTaskFormModal()" class="close-modal-btn">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <form [formGroup]="taskForm" (ngSubmit)="saveTask()" class="modal-form">
+          <mat-form-field appearance="outline">
+            <mat-label>Task Title</mat-label>
+            <input matInput formControlName="title" placeholder="Describe the feature or bug...">
+            <mat-error>Title is required and cannot exceed 250 characters</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Detailed Description</mat-label>
+            <textarea matInput formControlName="description" rows="3" placeholder="Provide detailed context and expectations"></textarea>
+          </mat-form-field>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Assigned Developer</mat-label>
+              <mat-select formControlName="assignedDeveloperId">
+                <mat-option value="">Unassigned</mat-option>
+                <mat-option *ngFor="let u of usersList" [value]="u.id">
+                  {{ u.firstName }} {{ u.lastName }} ({{ u.username }})
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Priority Level</mat-label>
+              <mat-select formControlName="priority">
+                <mat-option value="LOW">Low</mat-option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="CRITICAL">Critical</option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Story Points (Agile Estimate)</mat-label>
+              <mat-select formControlName="storyPoints">
+                <mat-option [value]="1">1 SP</mat-option>
+                <mat-option [value]="2">2 SP</mat-option>
+                <mat-option [value]="3">3 SP</mat-option>
+                <mat-option [value]="5">5 SP</mat-option>
+                <mat-option [value]="8">8 SP</mat-option>
+                <mat-option [value]="13">13 SP</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Due Date</mat-label>
+              <input matInput type="datetime-local" formControlName="dueDate">
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Labels (Comma-separated)</mat-label>
+              <input matInput formControlName="labels" placeholder="e.g. Frontend, Bug, Auth">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Sprint Assignment</mat-label>
+              <mat-select formControlName="sprintId">
+                <mat-option value="">Project Backlog</mat-option>
+                <mat-option *ngFor="let s of sprints" [value]="s.id">
+                  {{ s.name }} ({{ s.status }})
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Estimated Hours</mat-label>
+              <input matInput type="number" step="0.5" formControlName="estimatedHours">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" *ngIf="isTaskEdit">
+              <mat-label>Actual Logged Hours</mat-label>
+              <input matInput type="number" step="0.5" formControlName="actualHours">
+            </mat-form-field>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="action-btn-secondary" (click)="closeTaskFormModal()">Cancel</button>
+            <button type="submit" class="action-btn" [disabled]="taskForm.invalid">Save Task</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
+
+  <!-- MODAL OVERLAY: TASK DETAILS VIEW (COMMENTS, BLOCKERS & TIMELINE) -->
+  <div class="modal-overlay" *ngIf="selectedTaskDetails" (click)="closeTaskDetails()">
+    <div class="modal-container task-details-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="task-details-title-row">
+          <span class="priority-badge" [class]="selectedTaskDetails.priority.toLowerCase()">{{ selectedTaskDetails.priority }}</span>
+          <h3>{{ selectedTaskDetails.title }}</h3>
+        </div>
+        <div class="details-header-actions">
+          <button mat-icon-button color="primary" (click)="openEditTaskModal(selectedTaskDetails)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" (click)="deleteTask(selectedTaskDetails.id)">
+            <mat-icon>delete</mat-icon>
+          </button>
+          <button (click)="closeTaskDetails()" class="close-modal-btn">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-body details-body-grid">
+        <!-- LEFT: DESCRIPTION, BLOCKERS & DISCUSSIONS -->
+        <div class="details-left">
+          <!-- Description -->
+          <div class="details-section" *ngIf="selectedTaskDetails.description">
+            <h4>Description</h4>
+            <p class="description-content">{{ selectedTaskDetails.description }}</p>
+          </div>
+
+          <!-- Blocker Section -->
+          <div class="details-section">
+            <h4>Blockers Management</h4>
+            <div class="blocker-inputs">
+              <input type="text" [(ngModel)]="newBlockerName" placeholder="e.g. Waiting for Review" class="comment-input">
+              <button class="action-btn-sm" (click)="addBlocker()">Log Blocker</button>
+            </div>
+            
+            <div class="blocker-list-container">
+              <div *ngIf="taskBlockers.length === 0" class="empty-state-small">No active blockers.</div>
+              <div class="blocker-list-item" *ngFor="let b of taskBlockers">
+                <div class="blocker-text">
+                  <span class="blocker-bullet" [class.resolved]="b.status === 'RESOLVED'"></span>
+                  <span class="name" [class.resolved-line]="b.status === 'RESOLVED'">{{ b.name }}</span>
+                </div>
+                <div class="blocker-actions" *ngIf="b.status === 'ACTIVE'">
+                  <button class="resolve-btn" (click)="resolveBlocker(b.id)">Resolve</button>
+                </div>
+                <span class="resolved-by-meta" *ngIf="b.status === 'RESOLVED'">
+                  Resolved by {{ b.resolvedBy }} at {{ b.resolvedAt | date:'shortTime' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comments/Discussions Section -->
+          <div class="details-section">
+            <h4>Task Discussions</h4>
+            
+            <!-- Comment Input -->
+            <div class="comment-input-row">
+              <textarea [(ngModel)]="newCommentContent" rows="2" placeholder="Write a note, query, or update..." class="comment-input"></textarea>
+              <button class="action-btn-sm" (click)="postComment()">Post Note</button>
+            </div>
+
+            <!-- Comments List -->
+            <div class="comments-list">
+              <div *ngIf="taskComments.length === 0" class="empty-state-small">No discussion records.</div>
+              <div class="comment-bubble" *ngFor="let c of taskComments">
+                <div class="bubble-header">
+                  <span class="author">&#64;{{ c.authorUsername }}</span>
+                  <span class="date">{{ c.createdAt | date:'short' }}</span>
+                </div>
+                <p class="content">{{ c.content }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: TASK META-DATA & ACTIVITY TIMELINE -->
+        <div class="details-right">
+          <div class="details-meta-panel">
+            <h4>Task Metadata</h4>
+            <div class="meta-row">
+              <span class="label">Assignee</span>
+              <span class="value"><strong>{{ selectedTaskDetails.assignedDeveloperName }}</strong></span>
+            </div>
+            <div class="meta-row">
+              <span class="label">Story Points</span>
+              <span class="value sp-badge">{{ selectedTaskDetails.storyPoints }} SP</span>
+            </div>
+            <div class="meta-row">
+              <span class="label">Status</span>
+              <span class="value status-badge" [class]="selectedTaskDetails.status.toLowerCase()">{{ selectedTaskDetails.status }}</span>
+            </div>
+            <div class="meta-row" *ngIf="selectedTaskDetails.dueDate">
+              <span class="label">Due Date</span>
+              <span class="value">{{ selectedTaskDetails.dueDate | date:'mediumDate' }}</span>
+            </div>
+            <div class="meta-row">
+              <span class="label">Estimated Hours</span>
+              <span class="value">{{ selectedTaskDetails.estimatedHours }} hrs</span>
+            </div>
+            <div class="meta-row" *ngIf="selectedTaskDetails.actualHours > 0">
+              <span class="label">Logged Hours</span>
+              <span class="value">{{ selectedTaskDetails.actualHours }} hrs</span>
+            </div>
+            <div class="meta-row" *ngIf="selectedTaskDetails.labels">
+              <span class="label">Tags</span>
+              <span class="value">
+                <span class="card-label" *ngFor="let l of selectedTaskDetails.labels.split(',')">{{ l }}</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Task Audit Timeline -->
+          <div class="task-timeline-panel">
+            <h4>Task Event History</h4>
+            <div class="task-timeline">
+              <div *ngIf="taskActivities.length === 0" class="empty-state-small">No timeline entries.</div>
+              <div class="timeline-step" *ngFor="let act of taskActivities">
+                <div class="step-icon" [class]="act.eventType.toLowerCase()"></div>
+                <div class="step-content">
+                  <p class="message">{{ act.message }}</p>
+                  <span class="actor-meta">by &#64;{{ act.actor }} • {{ act.timestamp | date:'shortTime' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
 </div>

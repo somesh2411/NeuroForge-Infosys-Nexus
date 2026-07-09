@@ -12,4 +12,6 @@ public interface SprintService {
     List<SprintResponse> getSprintsByProject(String projectId);
     List<SprintResponse> getAllSprints();
     void deleteSprint(String id);
+    SprintResponse startSprint(String id);
+    SprintResponse completeSprint(String id);
 }

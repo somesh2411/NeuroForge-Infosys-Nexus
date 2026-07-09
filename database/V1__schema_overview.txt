@@ -1,0 +1,107 @@
+NeuroForge Nexus - Database Schema Overview
+
+=========================================
+1. USER SERVICE DATABASE: user_db
+=========================================
+TABLE: users
+  - id VARCHAR(50) PRIMARY KEY (Keycloak UUID)
+  - username VARCHAR(100) NOT NULL UNIQUE
+  - email VARCHAR(150) NOT NULL UNIQUE
+  - first_name VARCHAR(100)
+  - last_name VARCHAR(100)
+  - primary_team_id VARCHAR(50) FOREIGN KEY -> teams(id)
+  - created_at TIMESTAMP
+  - created_by VARCHAR(100)
+  - updated_at TIMESTAMP
+  - updated_by VARCHAR(100)
+  - is_deleted BOOLEAN
+  - deleted_at TIMESTAMP
+  - deleted_by VARCHAR(100)
+
+TABLE: teams
+  - id VARCHAR(50) PRIMARY KEY
+  - name VARCHAR(100) NOT NULL UNIQUE
+  - code VARCHAR(50) NOT NULL UNIQUE
+  - description TEXT
+  - lead_id VARCHAR(50) FOREIGN KEY -> users(id)
+  - created_at TIMESTAMP
+  - created_by VARCHAR(100)
+  - updated_at TIMESTAMP
+  - updated_by VARCHAR(100)
+  - is_deleted BOOLEAN
+  - deleted_at TIMESTAMP
+  - deleted_by VARCHAR(100)
+
+=========================================
+2. PROJECT SERVICE DATABASE: project_db
+=========================================
+TABLE: projects
+  - id VARCHAR(50) PRIMARY KEY
+  - name VARCHAR(100) NOT NULL UNIQUE
+  - key VARCHAR(10) NOT NULL UNIQUE
+  - description TEXT
+  - manager_id VARCHAR(50) (references replicated users table)
+  - status VARCHAR(50) NOT NULL
+  - created_at TIMESTAMP
+  - created_by VARCHAR(100)
+  - updated_at TIMESTAMP
+  - updated_by VARCHAR(100)
+  - is_deleted BOOLEAN
+  - deleted_at TIMESTAMP
+  - deleted_by VARCHAR(100)
+
+TABLE: milestones
+  - id VARCHAR(50) PRIMARY KEY
+  - project_id VARCHAR(50) NOT NULL FOREIGN KEY -> projects(id)
+  - name VARCHAR(100) NOT NULL
+  - description TEXT
+  - target_date TIMESTAMP
+  - status VARCHAR(50) NOT NULL
+  - created_at TIMESTAMP
+  - created_by VARCHAR(100)
+  - updated_at TIMESTAMP
+  - updated_by VARCHAR(100)
+  - is_deleted BOOLEAN
+  - deleted_at TIMESTAMP
+  - deleted_by VARCHAR(100)
+
+TABLE: project_team (junction)
+  - project_id VARCHAR(50) FOREIGN KEY -> projects(id)
+  - team_id VARCHAR(50) (references replicated teams table)
+  - PRIMARY KEY (project_id, team_id)
+
+TABLE: users (local read model, synced via Kafka)
+  - id VARCHAR(50) PRIMARY KEY
+  - username VARCHAR(100)
+  - first_name VARCHAR(100)
+  - last_name VARCHAR(100)
+
+TABLE: teams (local read model, synced via Kafka)
+  - id VARCHAR(50) PRIMARY KEY
+  - name VARCHAR(100)
+  - code VARCHAR(50)
+
+=========================================
+3. SPRINT SERVICE DATABASE: sprint_db
+=========================================
+TABLE: sprints
+  - id VARCHAR(50) PRIMARY KEY
+  - project_id VARCHAR(50) NOT NULL (references replicated projects table)
+  - name VARCHAR(100) NOT NULL
+  - goal TEXT
+  - start_date TIMESTAMP
+  - end_date TIMESTAMP
+  - capacity INT
+  - status VARCHAR(50) NOT NULL
+  - created_at TIMESTAMP
+  - created_by VARCHAR(100)
+  - updated_at TIMESTAMP
+  - updated_by VARCHAR(100)
+  - is_deleted BOOLEAN
+  - deleted_at TIMESTAMP
+  - deleted_by VARCHAR(100)
+
+TABLE: projects (local read model, synced via Kafka)
+  - id VARCHAR(50) PRIMARY KEY
+  - name VARCHAR(100)
+  - key VARCHAR(10)

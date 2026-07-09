@@ -1,0 +1,110 @@
+.sidenav-container {
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--bg-primary);
+}
+
+.sidenav {
+  width: 260px;
+  background-color: var(--bg-secondary) !important;
+  border-right: 1px solid var(--border-color) !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 2.2rem 1.8rem;
+}
+
+.logo-icon {
+  font-size: 2.2rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  color: var(--secondary);
+  filter: drop-shadow(0 0 8px var(--secondary-glow));
+}
+
+.logo-area h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, #fff 0%, var(--text-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nav-list {
+  padding: 0 1rem !important;
+}
+
+.nav-list a {
+  border-radius: var(--radius-sm) !important;
+  margin-bottom: 0.4rem !important;
+  color: var(--text-secondary) !important;
+  transition: var(--transition) !important;
+}
+.nav-list a:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: var(--text-primary) !important;
+}
+
+.active-nav {
+  background: rgba(138, 43, 226, 0.1) !important;
+  color: var(--primary) !important;
+  font-weight: 600 !important;
+  border-left: 3px solid var(--primary) !important;
+}
+
+.active-nav mat-icon {
+  color: var(--primary) !important;
+}
+
+.sidenav-footer {
+  padding: 2rem 1.8rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.content-area {
+  background-color: var(--bg-primary) !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.header-toolbar {
+  background-color: transparent !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  padding: 0 2rem !important;
+  height: 64px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.user-profile-menu {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+}
+
+.user-profile-menu strong {
+  color: var(--text-primary);
+}
+
+.router-viewport {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.unauth-viewport {
+  height: 100vh;
+  width: 100vw;
+  overflow-y: auto;
+}

@@ -1,0 +1,354 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+.admin-container {
+  padding: 40px;
+  min-height: calc(100vh - 64px);
+  background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+  font-family: 'Outfit', sans-serif;
+  box-sizing: border-box;
+}
+
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.title-area {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-icon {
+  font-size: 40px;
+  height: 40px;
+  width: 40px;
+  color: #818cf8;
+}
+
+.title-area h1 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #94a3b8;
+  margin: 4px 0 0 0;
+}
+
+.search-bar-wrapper {
+  width: 320px;
+}
+
+.search-field {
+  width: 100%;
+}
+
+::ng-deep .search-field .mat-mdc-text-field-wrapper {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border-radius: 12px !important;
+}
+
+.glass-panel {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.data-card {
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-overlay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 80px 0;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  background: transparent !important;
+}
+
+::ng-deep .admin-table th {
+  color: #94a3b8 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding: 16px !important;
+}
+
+::ng-deep .admin-table td {
+  color: #cbd5e1 !important;
+  font-size: 15px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  padding: 16px !important;
+}
+
+.table-row {
+  transition: background-color 0.2s ease;
+}
+
+.table-row:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.username-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #f1f5f9 !important;
+}
+
+.cell-icon {
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
+  color: #64748b;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.team-badge {
+  background-color: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.no-badge {
+  color: #64748b;
+  font-style: italic;
+  font-size: 13px;
+}
+
+.role-badge {
+  border: 1px solid transparent;
+}
+
+.role-badge.admin {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.role-badge.organization_owner {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.role-badge.team_lead {
+  background-color: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.role-badge.developer {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.role-badge.qa {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.role-badge.stakeholder {
+  background-color: rgba(107, 114, 128, 0.15);
+  color: #9ca3af;
+  border-color: rgba(107, 114, 128, 0.3);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.no-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 0;
+  color: #64748b;
+}
+
+.no-data-icon {
+  font-size: 48px;
+  height: 48px;
+  width: 48px;
+  margin-bottom: 12px;
+}
+
+/* Edit Overlay Modal */
+.edit-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(2, 6, 23, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.edit-modal {
+  width: 100%;
+  max-width: 520px;
+  padding: 30px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1001;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.modal-header h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.btn-close {
+  color: #94a3b8;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-info-banner {
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 10px 16px;
+}
+
+.form-info-banner p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+.form-info-banner strong {
+  color: #94a3b8;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.half-width {
+  flex: 1;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.btn-cancel {
+  color: #cbd5e1 !important;
+}
+
+.btn-save {
+  padding: 0 24px !important;
+  font-weight: 600;
+  border-radius: 8px !important;
+  background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%) !important;
+  color: #ffffff !important;
+}
+
+.spinner {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: #818cf8;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.glowing-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.orb-1 {
+  width: 250px;
+  height: 250px;
+  background: #6366f1;
+  top: 10%;
+  left: 20%;
+}
+
+.orb-2 {
+  width: 200px;
+  height: 200px;
+  background: #06b6d4;
+  bottom: 10%;
+  right: 20%;
+}

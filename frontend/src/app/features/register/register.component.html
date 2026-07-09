@@ -1,0 +1,113 @@
+<div class="auth-container">
+  <div class="auth-card-wrapper">
+    <div class="glowing-orb orb-1"></div>
+    <div class="glowing-orb orb-2"></div>
+    
+    <mat-card class="auth-card glass-panel">
+      <mat-card-header class="auth-header">
+        <div class="brand-logo">
+          <mat-icon class="logo-icon animate-pulse">blur_on</mat-icon>
+          <h1>JOIN NEUROFORGE</h1>
+          <p class="subtitle">Nexus Account Registration</p>
+        </div>
+      </mat-card-header>
+      
+      <mat-card-content class="auth-content">
+        <!-- Error Alert Panel -->
+        <div class="error-banner" *ngIf="errorMessage">
+          <mat-icon class="error-banner-icon">error_outline</mat-icon>
+          <span class="error-message-text">{{ errorMessage }}</span>
+        </div>
+
+        <form (ngSubmit)="onSubmit()" #registerForm="ngForm" class="auth-form">
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>First Name *</mat-label>
+              <input matInput name="firstName" [(ngModel)]="user.firstName" required placeholder="First Name">
+            </mat-form-field>
+            
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Last Name *</mat-label>
+              <input matInput name="lastName" [(ngModel)]="user.lastName" required placeholder="Last Name">
+            </mat-form-field>
+          </div>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Username *</mat-label>
+            <input matInput name="username" [(ngModel)]="user.username" required placeholder="Pick a username">
+            <mat-icon matSuffix>person</mat-icon>
+          </mat-form-field>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email Address *</mat-label>
+            <input matInput type="email" name="email" [(ngModel)]="user.email" required placeholder="user@neuroforge.com">
+            <mat-icon matSuffix>email</mat-icon>
+          </mat-form-field>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Password *</mat-label>
+            <input matInput type="password" name="password" [(ngModel)]="user.password" (ngModelChange)="onPasswordChange()" required placeholder="Choose a secure password">
+            <mat-icon matSuffix>lock</mat-icon>
+          </mat-form-field>
+
+          <!-- Password strength dynamic checklist -->
+          <div class="password-criteria-list" *ngIf="user.password">
+            <div class="criteria-title">Password Security Requirements:</div>
+            
+            <div class="criteria-item" [ngClass]="{'valid': passChecks.length, 'invalid': !passChecks.length}">
+              <mat-icon class="crit-icon">{{ passChecks.length ? 'check_circle' : 'cancel' }}</mat-icon>
+              <span>At least 12 characters ({{ user.password.length }}/12)</span>
+            </div>
+            
+            <div class="criteria-item" [ngClass]="{'valid': passChecks.uppercase, 'invalid': !passChecks.uppercase}">
+              <mat-icon class="crit-icon">{{ passChecks.uppercase ? 'check_circle' : 'cancel' }}</mat-icon>
+              <span>At least 1 uppercase letter (A-Z)</span>
+            </div>
+            
+            <div class="criteria-item" [ngClass]="{'valid': passChecks.lowercase, 'invalid': !passChecks.lowercase}">
+              <mat-icon class="crit-icon">{{ passChecks.lowercase ? 'check_circle' : 'cancel' }}</mat-icon>
+              <span>At least 1 lowercase letter (a-z)</span>
+            </div>
+            
+            <div class="criteria-item" [ngClass]="{'valid': passChecks.number, 'invalid': !passChecks.number}">
+              <mat-icon class="crit-icon">{{ passChecks.number ? 'check_circle' : 'cancel' }}</mat-icon>
+              <span>At least 1 numerical digit (0-9)</span>
+            </div>
+            
+            <div class="criteria-item" [ngClass]="{'valid': passChecks.special, 'invalid': !passChecks.special}">
+              <mat-icon class="crit-icon">{{ passChecks.special ? 'check_circle' : 'cancel' }}</mat-icon>
+              <span>At least 1 special symbol (!&#64;#$%^&*)</span>
+            </div>
+          </div>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Role / Assignment *</mat-label>
+            <mat-select name="role" [(ngModel)]="user.role" required>
+              <mat-option *ngFor="let role of roles" [value]="role.value">
+                {{ role.label }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>assignment_ind</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Role Verification Code *</mat-label>
+            <input matInput name="roleCode" [(ngModel)]="user.roleCode" required placeholder="Enter secret code (e.g. SD0621)">
+            <mat-icon matSuffix>vpn_key</mat-icon>
+          </mat-form-field>
+          
+          <div class="form-actions">
+            <button mat-raised-button color="primary" type="submit" [disabled]="loading || !isPasswordValid" class="btn-submit">
+              <span *ngIf="!loading">REGISTER</span>
+              <span *ngIf="loading" class="spinner"></span>
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+      
+      <mat-card-actions class="auth-actions">
+        <p>Already have an account? <a routerLink="/login" class="link-auth">Sign in instead</a></p>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+</div>

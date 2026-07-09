@@ -1,0 +1,223 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Projects & Roadmap</h1>
+      <p class="page-subtitle">Track project milestones and manage team alignments</p>
+    </div>
+    <button *ngIf="authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD')" 
+            class="action-btn" (click)="toggleProjectForm(false)">
+      <mat-icon>add</mat-icon> Create Project
+    </button>
+  </div>
+
+  <!-- Create / Edit Project Form Card -->
+  <mat-card class="form-card" *ngIf="showForm">
+    <mat-card-header>
+      <mat-card-title>{{ isEdit ? 'Modify Project Scope' : 'Initiate New Project' }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="projectForm" (ngSubmit)="saveProject()" class="project-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Project Name</mat-label>
+          <input matInput formControlName="name" placeholder="e.g. Apollo Platform">
+          <mat-error>Name is required</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Project Key</mat-label>
+          <input matInput formControlName="key" placeholder="e.g. APL (2-10 UPPERCASE letters)">
+          <mat-error>Valid key required (2-10 uppercase letters)</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Description</mat-label>
+          <textarea matInput formControlName="description" rows="3" placeholder="Core vision and objectives"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Project Manager</mat-label>
+          <mat-select formControlName="managerId">
+            <mat-option *ngFor="let u of users" [value]="u.id">
+              {{ u.firstName && u.lastName ? u.firstName + ' ' + u.lastName : u.username }}
+            </mat-option>
+          </mat-select>
+          <mat-error>Manager is required</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" *ngIf="isEdit">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status">
+            <mat-option value="ACTIVE">ACTIVE</mat-option>
+            <mat-option value="COMPLETED">COMPLETED</mat-option>
+            <mat-option value="ARCHIVED">ARCHIVED</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <div class="form-actions">
+          <button type="button" class="action-btn-secondary" (click)="toggleProjectForm()">Cancel</button>
+          <button type="submit" class="action-btn" [disabled]="projectForm.invalid">Initiate</button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Projects Main Layout -->
+  <div class="projects-layout" *ngIf="!showForm">
+    <!-- Left List Panel -->
+    <div class="projects-list-panel">
+      <div *ngIf="projects.length === 0" class="empty-state">
+        No projects configured yet.
+      </div>
+      
+      <div class="project-card" 
+           *ngFor="let p of projects" 
+           [class.active-card]="selectedProject?.id === p.id"
+           (click)="selectProject(p)">
+        <div class="proj-card-header">
+          <span class="proj-key-badge">{{ p.key }}</span>
+          <span class="badge" [class.badge-active]="p.status === 'ACTIVE'" [class.badge-completed]="p.status === 'COMPLETED'">
+            {{ p.status }}
+          </span>
+        </div>
+        <h3>{{ p.name }}</h3>
+        <p class="proj-desc">{{ p.description || 'No description' }}</p>
+      </div>
+    </div>
+
+    <!-- Right Details Panel -->
+    <div class="projects-detail-panel" *ngIf="selectedProject">
+      <mat-card class="detail-card">
+        <mat-card-content>
+          <div class="detail-header">
+            <div>
+              <span class="badge badge-completed">PROJECT KEY: {{ selectedProject.key }}</span>
+              <h2>{{ selectedProject.name }}</h2>
+            </div>
+            
+            <div class="action-icons" *ngIf="authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD')">
+              <button mat-icon-button color="primary" (click)="toggleProjectForm(true)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deleteProject(selectedProject.id)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <p class="detail-desc">{{ selectedProject.description || 'No description provided.' }}</p>
+
+          <div class="meta-section">
+            <div class="meta-item">
+              <h4>Project Manager</h4>
+              <div class="meta-val">
+                <mat-icon>person</mat-icon>
+                <span>{{ selectedProject.managerName || 'No PM Assigned' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Associated Teams -->
+          <div class="teams-section">
+            <h3>Aligned Teams</h3>
+            <div class="aligned-teams-list">
+              <div *ngIf="selectedProject.teamIds.length === 0" class="empty-roster">
+                No teams aligned with this project. Add teams below.
+              </div>
+
+              <div class="aligned-team-item" *ngFor="let tId of selectedProject.teamIds">
+                <span>{{ getTeamNameById(tId) }}</span>
+                <button *ngIf="authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD')"
+                        mat-icon-button color="warn" (click)="disassociateTeam(tId)">
+                  <mat-icon>link_off</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            <!-- Align Team Dropdown -->
+            <div class="align-team-control" 
+                 *ngIf="authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD')">
+              <div class="align-team-row">
+                <mat-form-field appearance="outline" class="align-select">
+                  <mat-label>Select Team</mat-label>
+                  <mat-select #teamSelect>
+                    <mat-option *ngFor="let t of getFilteredTeams()" [value]="t.id">
+                      {{ t.name }} ({{ t.code }})
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <button class="action-btn" (click)="associateTeam(teamSelect.value); teamSelect.value = ''">
+                  Align Team
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Milestones Section -->
+          <div class="milestones-section">
+            <div class="section-title-row">
+              <h3>Project Milestones</h3>
+              <button class="action-btn-secondary" 
+                      *ngIf="authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD')"
+                      (click)="toggleMilestoneForm()">
+                <mat-icon>add</mat-icon> Add Milestone
+              </button>
+            </div>
+
+            <!-- Milestone Form -->
+            <div class="milestone-form-card" *ngIf="showMilestoneForm">
+              <h4>Define Milestone</h4>
+              <form [formGroup]="milestoneForm" (ngSubmit)="saveMilestone()" class="milestone-form">
+                <mat-form-field appearance="outline">
+                  <mat-label>Milestone Title</mat-label>
+                  <input matInput formControlName="name" placeholder="e.g. Beta release">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Description</mat-label>
+                  <input matInput formControlName="description" placeholder="Deliverables and checks">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Target Deadline</mat-label>
+                  <input matInput type="datetime-local" formControlName="targetDate">
+                </mat-form-field>
+
+                <div class="form-actions">
+                  <button type="button" class="action-btn-secondary" (click)="toggleMilestoneForm()">Cancel</button>
+                  <button type="submit" class="action-btn" [disabled]="milestoneForm.invalid">Add</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Milestones List -->
+            <div class="milestones-list">
+              <div *ngIf="milestones.length === 0" class="empty-roster">
+                No milestones defined for this project.
+              </div>
+
+              <div class="milestone-item" *ngFor="let m of milestones">
+                <div class="milestone-left">
+                  <mat-icon class="milestone-icon">flag</mat-icon>
+                  <div>
+                    <h4>{{ m.name }}</h4>
+                    <p class="milestone-desc">{{ m.description }}</p>
+                    <span class="milestone-date" *ngIf="m.targetDate">Target: {{ m.targetDate | date:'mediumDate' }}</span>
+                  </div>
+                </div>
+                <div class="milestone-right">
+                  <span class="badge" [class.badge-active]="m.status === 'PLANNED'" [class.badge-completed]="m.status === 'ACHIEVED'">
+                    {{ m.status }}
+                  </span>
+                  <button *ngIf="authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD')"
+                          mat-icon-button color="warn" (click)="deleteMilestone(m.id)">
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

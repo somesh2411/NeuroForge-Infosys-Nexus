@@ -1,0 +1,67 @@
+<mat-sidenav-container class="sidenav-container" *ngIf="authService.isAuthenticated(); else unauthLayout">
+  <!-- Side Nav Panel -->
+  <mat-sidenav mode="side" opened class="sidenav">
+    <div class="logo-area">
+      <mat-icon class="logo-icon">blur_on</mat-icon>
+      <h2>NEUROFORGE</h2>
+    </div>
+    
+    <mat-nav-list class="nav-list">
+      <a mat-list-item routerLink="/dashboard" routerLinkActive="active-nav">
+        <mat-icon matListItemIcon>dashboard</mat-icon>
+        <span matListItemTitle>Dashboard</span>
+      </a>
+      
+      <a mat-list-item routerLink="/projects" routerLinkActive="active-nav">
+        <mat-icon matListItemIcon>assignment</mat-icon>
+        <span matListItemTitle>Projects & Roadmap</span>
+      </a>
+      
+      <a mat-list-item routerLink="/teams" routerLinkActive="active-nav">
+        <mat-icon matListItemIcon>groups</mat-icon>
+        <span matListItemTitle>Teams</span>
+      </a>
+      
+      <a mat-list-item routerLink="/sprints" routerLinkActive="active-nav">
+        <mat-icon matListItemIcon>published_with_changes</mat-icon>
+        <span matListItemTitle>Sprint Planning</span>
+      </a>
+
+      <!-- Admin Specific Links -->
+      <a mat-list-item routerLink="/admin/users" routerLinkActive="active-nav" *ngIf="authService.hasRole('ADMIN')">
+        <mat-icon matListItemIcon>admin_panel_settings</mat-icon>
+        <span matListItemTitle>User Admin</span>
+      </a>
+    </mat-nav-list>
+
+    <div class="sidenav-footer">
+      <span class="version-label">v1.0.0 (Milestone 1)</span>
+    </div>
+  </mat-sidenav>
+
+  <!-- Content Area -->
+  <mat-sidenav-content class="content-area">
+    <mat-toolbar class="header-toolbar">
+      <span class="spacer"></span>
+      
+      <!-- User profile quick view -->
+      <div class="user-profile-menu" *ngIf="authService.isAuthenticated()">
+        <span class="user-greeting">Hi, <strong>{{ authService.getName() }}</strong></span>
+        <button mat-icon-button (click)="authService.logout()" title="Logout of NeuroForge">
+          <mat-icon>logout</mat-icon>
+        </button>
+      </div>
+    </mat-toolbar>
+
+    <!-- Subpage Injection -->
+    <div class="router-viewport">
+      <router-outlet></router-outlet>
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>
+
+<ng-template #unauthLayout>
+  <div class="unauth-viewport">
+    <router-outlet></router-outlet>
+  </div>
+</ng-template>

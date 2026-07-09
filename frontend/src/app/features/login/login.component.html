@@ -1,0 +1,85 @@
+<div class="auth-container">
+  <div class="auth-card-wrapper">
+    <div class="glowing-orb orb-1"></div>
+    <div class="glowing-orb orb-2"></div>
+    
+    <mat-card class="auth-card glass-panel">
+      <mat-card-header class="auth-header">
+        <div class="brand-logo">
+          <mat-icon class="logo-icon animate-pulse">blur_on</mat-icon>
+          <h1>NEUROFORGE</h1>
+          <p class="subtitle">Nexus Orchestrator</p>
+        </div>
+      </mat-card-header>
+      
+      <mat-card-content class="auth-content">
+        <!-- Error Alert Panel -->
+        <div class="error-banner" *ngIf="errorMessage">
+          <mat-icon class="error-banner-icon">error_outline</mat-icon>
+          <span class="error-message-text">{{ errorMessage }}</span>
+        </div>
+
+        <form (ngSubmit)="onSubmit()" #loginForm="ngForm" class="auth-form">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Username</mat-label>
+            <input matInput name="username" [(ngModel)]="credentials.username" required placeholder="Enter your username">
+            <mat-icon matSuffix>person</mat-icon>
+          </mat-form-field>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Password</mat-label>
+            <input matInput type="password" name="password" [(ngModel)]="credentials.password" (ngModelChange)="onPasswordChange()" required placeholder="Enter your password">
+            <mat-icon matSuffix>lock</mat-icon>
+          </mat-form-field>
+
+          <!-- Password strength dynamic checklist -->
+          <div class="password-criteria-list" *ngIf="credentials.password">
+            <div class="criteria-title">Password Security Requirements:</div>
+            
+            <div class="criteria-item" [ngClass]="{'valid': passChecks.length, 'invalid': !passChecks.length}">
+              <mat-icon class="crit-icon">{{ passChecks.length ? 'check_circle' : 'cancel' }}</mat-icon>
+              <span>At least 12 characters ({{ credentials.password.length }}/12)</span>
+            </div>
+            
+            <div class="criteria-item" [ngClass]="{'valid': passChecks.uppercase, 'invalid': !passChecks.uppercase}">
+              <mat-icon class="crit-icon">{{ passChecks.uppercase ? 'check_circle' : 'cancel' }}</mat-icon>
+              <span>At least 1 uppercase letter (A-Z)</span>
+            </div>
+            
+            <div class="criteria-item" [ngClass]="{'valid': passChecks.lowercase, 'invalid': !passChecks.lowercase}">
+              <mat-icon class="crit-icon">{{ passChecks.lowercase ? 'check_circle' : 'cancel' }}</mat-icon>
+              <span>At least 1 lowercase letter (a-z)</span>
+            </div>
+            
+            <div class="criteria-item" [ngClass]="{'valid': passChecks.number, 'invalid': !passChecks.number}">
+              <mat-icon class="crit-icon">{{ passChecks.number ? 'check_circle' : 'cancel' }}</mat-icon>
+              <span>At least 1 numerical digit (0-9)</span>
+            </div>
+            
+            <div class="criteria-item" [ngClass]="{'valid': passChecks.special, 'invalid': !passChecks.special}">
+              <mat-icon class="crit-icon">{{ passChecks.special ? 'check_circle' : 'cancel' }}</mat-icon>
+              <span>At least 1 special symbol (!&#64;#$%^&*)</span>
+            </div>
+          </div>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Two-Step Verification Code</mat-label>
+            <input matInput name="verificationCode" [(ngModel)]="credentials.verificationCode" required placeholder="Enter role security code (e.g. A0621)">
+            <mat-icon matSuffix>security</mat-icon>
+          </mat-form-field>
+          
+          <div class="form-actions">
+            <button mat-raised-button color="primary" type="submit" [disabled]="loading || !isPasswordValid" class="btn-submit">
+              <span *ngIf="!loading">SIGN IN</span>
+              <span *ngIf="loading" class="spinner"></span>
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+      
+      <mat-card-actions class="auth-actions">
+        <p>New to NeuroForge? <a routerLink="/register" class="link-auth">Create an account</a></p>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+</div>

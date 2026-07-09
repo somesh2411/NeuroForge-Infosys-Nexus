@@ -1,0 +1,127 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">NeuroForge Workspace</h1>
+      <p class="page-subtitle">Welcome back, {{ authService.getName() }}</p>
+    </div>
+    <div class="user-badge-container">
+      <span class="badge badge-active">{{ authService.getRoles()[0] || 'User' }}</span>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid">
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-icon-wrapper proj-icon">
+          <mat-icon>assessment</mat-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Active Projects</span>
+          <h2 class="stat-number">{{ stats.projectsCount }}</h2>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-icon-wrapper team-icon">
+          <mat-icon>groups</mat-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Cross-functional Teams</span>
+          <h2 class="stat-number">{{ stats.teamsCount }}</h2>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-icon-wrapper sprint-icon">
+          <mat-icon>published_with_changes</mat-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Velocity Sprints</span>
+          <h2 class="stat-number">{{ stats.sprintsCount }}</h2>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-icon-wrapper user-icon">
+          <mat-icon>person</mat-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Team Members</span>
+          <h2 class="stat-number">{{ stats.usersCount }}</h2>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Content Section -->
+  <div class="dashboard-content-grid">
+    <!-- Recent Projects -->
+    <mat-card class="content-card">
+      <mat-card-header>
+        <mat-card-title>Recent Projects</mat-card-title>
+        <button mat-button color="accent" routerLink="/projects">View All</button>
+      </mat-card-header>
+      <mat-card-content>
+        <div *ngIf="loading" class="placeholder-text">Loading projects...</div>
+        <div *ngIf="!loading && recentProjects.length === 0" class="placeholder-text">
+          No projects found. Go to the Projects tab to create one.
+        </div>
+        
+        <div class="project-list" *ngIf="!loading && recentProjects.length > 0">
+          <div class="project-item" *ngFor="let proj of recentProjects" [routerLink]="['/projects']">
+            <div class="proj-meta">
+              <span class="proj-key">{{ proj.key }}</span>
+              <div class="proj-info">
+                <h3>{{ proj.name }}</h3>
+                <p>{{ proj.description || 'No description provided' }}</p>
+              </div>
+            </div>
+            <mat-icon class="arrow-icon">chevron_right</mat-icon>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Profile & Quick Links -->
+    <mat-card class="content-card">
+      <mat-card-header>
+        <mat-card-title>Session Profile</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="profile-details">
+          <div class="profile-row">
+            <span class="profile-label">Email:</span>
+            <span class="profile-value">{{ authService.getEmail() }}</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Roles:</span>
+            <span class="profile-value">{{ authService.getRoles().join(', ') }}</span>
+          </div>
+          <div class="profile-row" *ngIf="userProfile?.primaryTeamName">
+            <span class="profile-label">Primary Team:</span>
+            <span class="profile-value">{{ userProfile?.primaryTeamName }}</span>
+          </div>
+        </div>
+
+        <div class="quick-actions">
+          <h3>Quick SDLC Actions</h3>
+          <div class="action-buttons-grid">
+            <button class="action-btn-secondary" routerLink="/projects">
+              <mat-icon>add</mat-icon> Create Project
+            </button>
+            <button class="action-btn-secondary" routerLink="/teams">
+              <mat-icon>group_add</mat-icon> Configure Team
+            </button>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

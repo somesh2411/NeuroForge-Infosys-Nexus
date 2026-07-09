@@ -1,0 +1,157 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Cross-functional Teams</h1>
+      <p class="page-subtitle">Form, configure, and manage engineering teams</p>
+    </div>
+    <button *ngIf="authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD')" 
+            class="action-btn" (click)="toggleForm(false)">
+      <mat-icon>add</mat-icon> Create Team
+    </button>
+  </div>
+
+  <!-- Create / Edit Form Card -->
+  <mat-card class="form-card" *ngIf="showForm">
+    <mat-card-header>
+      <mat-card-title>{{ isEdit ? 'Edit Team Settings' : 'Assemble New Team' }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="teamForm" (ngSubmit)="saveTeam()" class="team-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Team Name</mat-label>
+          <input matInput formControlName="name" placeholder="e.g. Apollo Engine">
+          <mat-error>Name is required</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Unique Code</mat-label>
+          <input matInput formControlName="code" placeholder="e.g. APL (3-10 UPPERCASE characters)">
+          <mat-error>Valid team code required (3-10 uppercase characters)</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Description</mat-label>
+          <textarea matInput formControlName="description" rows="3" placeholder="Brief outline of team scope"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Scrum Lead / Lead Engineer</mat-label>
+          <mat-select formControlName="leadId">
+            <mat-option [value]="''">-- Assign Later --</mat-option>
+            <mat-option *ngFor="let u of users" [value]="u.id">
+              {{ u.firstName && u.lastName ? u.firstName + ' ' + u.lastName : u.username }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <div class="form-actions">
+          <button type="button" class="action-btn-secondary" (click)="toggleForm()">Cancel</button>
+          <button type="submit" class="action-btn" [disabled]="teamForm.invalid">Save Configuration</button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Teams Main Layout -->
+  <div class="teams-layout" *ngIf="!showForm">
+    <!-- Left List -->
+    <div class="teams-list-panel">
+      <div *ngIf="teams.length === 0" class="empty-state">
+        No teams configured yet.
+      </div>
+      
+      <div class="team-card" 
+           *ngFor="let t of teams" 
+           [class.active-card]="selectedTeam?.id === t.id"
+           (click)="selectTeam(t)">
+        <div class="team-card-header">
+          <span class="team-code">{{ t.code }}</span>
+          <h3>{{ t.name }}</h3>
+        </div>
+        <p class="team-desc">{{ t.description || 'No description' }}</p>
+        <div class="team-card-footer">
+          <span class="member-count">
+            <mat-icon>groups</mat-icon> {{ t.memberIds.length }} members
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Details Panel -->
+    <div class="teams-detail-panel" *ngIf="selectedTeam">
+      <mat-card class="detail-card">
+        <mat-card-content>
+          <div class="detail-header">
+            <div>
+              <span class="badge badge-completed">{{ selectedTeam.code }}</span>
+              <h2>{{ selectedTeam.name }}</h2>
+            </div>
+            
+            <div class="action-icons" *ngIf="authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER')">
+              <button mat-icon-button color="primary" (click)="toggleForm(true)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deleteTeam(selectedTeam.id)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <p class="detail-desc">{{ selectedTeam.description || 'No description provided for this team.' }}</p>
+
+          <div class="lead-section">
+            <h4>Scrum Lead / Manager</h4>
+            <div class="lead-info">
+              <mat-icon>assignment_ind</mat-icon>
+              <span>{{ selectedTeam.leadName || 'No lead assigned yet' }}</span>
+            </div>
+          </div>
+
+          <!-- Members List -->
+          <div class="members-list-section">
+            <div class="members-header">
+              <h3>Team Roster</h3>
+              <span class="badge badge-active">{{ selectedTeam.memberIds.length }} Engineers</span>
+            </div>
+
+            <div class="roster-list">
+              <div *ngIf="selectedTeam.memberIds.length === 0" class="empty-roster">
+                No members assigned to this team. Add team members below.
+              </div>
+
+              <div class="roster-item" *ngFor="let mId of selectedTeam.memberIds">
+                <div class="member-meta">
+                  <mat-icon class="member-avatar">person</mat-icon>
+                  <span>{{ getUserNameById(mId) }}</span>
+                </div>
+                <button *ngIf="authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD')"
+                        mat-icon-button color="warn" (click)="removeUserFromTeam(mId)">
+                  <mat-icon>person_remove</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            <!-- Add Member Section -->
+            <div class="add-member-control" 
+                 *ngIf="authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD')">
+              <h4>Assign Member</h4>
+              <div class="add-member-row">
+                <mat-form-field appearance="outline" class="add-member-select">
+                  <mat-label>Select User</mat-label>
+                  <mat-select #userSelect>
+                    <mat-option *ngFor="let u of getFilteredUsers()" [value]="u.id">
+                      {{ u.firstName && u.lastName ? u.firstName + ' ' + u.lastName : u.username }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <button class="action-btn" (click)="addUserToTeam(userSelect.value); userSelect.value = ''">
+                  Add Member
+                </button>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

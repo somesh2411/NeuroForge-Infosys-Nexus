@@ -1,0 +1,122 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Sprint Planning</h1>
+      <p class="page-subtitle">Schedule project sprints, target goals, and configure story capacity</p>
+      
+      <!-- Project Selection Dropdown in header -->
+      <div class="project-selector-container">
+        <mat-form-field appearance="outline" class="project-select-field">
+          <mat-label>Select Project</mat-label>
+          <mat-select [value]="selectedProject?.id" (selectionChange)="selectProject($event.value)">
+            <mat-option *ngFor="let p of projects" [value]="p.id">
+              {{ p.name }} ({{ p.key }})
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+    
+    <button *ngIf="selectedProject && (authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD'))"
+            class="action-btn" (click)="toggleSprintForm(false)">
+      <mat-icon>add</mat-icon> Schedule Sprint
+    </button>
+  </div>
+
+  <!-- Create / Edit Sprint Form Card -->
+  <mat-card class="form-card" *ngIf="showForm">
+    <mat-card-header>
+      <mat-card-title>{{ isEdit ? 'Modify Sprint Parameters' : 'Schedule New Sprint Cycle' }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="sprintForm" (ngSubmit)="saveSprint()" class="sprint-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Sprint Name</mat-label>
+          <input matInput formControlName="name" placeholder="e.g. Sprint 1 - Core Auth">
+          <mat-error>Name is required</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Sprint Goal</mat-label>
+          <textarea matInput formControlName="goal" rows="2" placeholder="Define clear goals for the team"></textarea>
+        </mat-form-field>
+
+        <div class="date-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Start Date</mat-label>
+            <input matInput type="datetime-local" formControlName="startDate">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>End Date</mat-label>
+            <input matInput type="datetime-local" formControlName="endDate">
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Story Points Capacity</mat-label>
+          <input matInput type="number" formControlName="capacity">
+          <mat-error>Capacity must be 0 or greater</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" *ngIf="isEdit">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status">
+            <mat-option value="PLANNED">PLANNED</mat-option>
+            <mat-option value="ACTIVE">ACTIVE</mat-option>
+            <mat-option value="COMPLETED">COMPLETED</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <div class="form-actions">
+          <button type="button" class="action-btn-secondary" (click)="toggleSprintForm()">Cancel</button>
+          <button type="submit" class="action-btn" [disabled]="sprintForm.invalid">Schedule</button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Sprints List Layout -->
+  <div class="sprints-grid" *ngIf="!showForm">
+    <div *ngIf="sprints.length === 0" class="empty-state">
+      No sprints scheduled for this project.
+    </div>
+
+    <mat-card class="sprint-card" *ngFor="let s of sprints">
+      <mat-card-content>
+        <div class="sprint-card-header">
+          <div>
+            <span class="badge" [class.badge-planned]="s.status === 'PLANNED'" [class.badge-active]="s.status === 'ACTIVE'" [class.badge-completed]="s.status === 'COMPLETED'">
+              {{ s.status }}
+            </span>
+            <h3>{{ s.name }}</h3>
+          </div>
+          <div class="action-icons" *ngIf="authService.hasRole('ADMIN') || authService.hasRole('ORGANIZATION_OWNER') || authService.hasRole('TEAM_LEAD')">
+            <button mat-icon-button color="primary" (click)="toggleSprintForm(true, s)">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="deleteSprint(s.id)">
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="sprint-goal-section" *ngIf="s.goal">
+          <h4>Goal:</h4>
+          <p>{{ s.goal }}</p>
+        </div>
+
+        <div class="sprint-details-meta">
+          <div class="meta-item">
+            <mat-icon>calendar_today</mat-icon>
+            <span>{{ s.startDate | date:'mediumDate' }} - {{ s.endDate | date:'mediumDate' }}</span>
+          </div>
+          <div class="meta-item">
+            <mat-icon>bolt</mat-icon>
+            <span>Capacity: {{ s.capacity }} Story Points</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

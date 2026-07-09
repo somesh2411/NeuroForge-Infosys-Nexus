@@ -1,0 +1,162 @@
+<div class="admin-container">
+  <div class="header-section">
+    <div class="title-area">
+      <mat-icon class="header-icon">admin_panel_settings</mat-icon>
+      <div>
+        <h1>User Administration</h1>
+        <p class="subtitle">Search, modify profiles, align teams, and manage credentials</p>
+      </div>
+    </div>
+    <div class="search-bar-wrapper">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Search Users...</mat-label>
+        <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearch()" placeholder="Type username, email, or name...">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <mat-card class="data-card glass-panel">
+    <div class="loading-overlay" *ngIf="loading">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="table-container" *ngIf="!loading">
+      <table mat-table [dataSource]="filteredUsers" class="admin-table">
+
+        <!-- Username Column -->
+        <ng-container matColumnDef="username">
+          <th mat-header-cell *matHeaderCellDef> Username </th>
+          <td mat-cell *matCellDef="let user" class="username-cell"> 
+            <mat-icon class="cell-icon">person</mat-icon>
+            {{user.username}} 
+          </td>
+        </ng-container>
+
+        <!-- Email Column -->
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef> Email </th>
+          <td mat-cell *matCellDef="let user"> {{user.email}} </td>
+        </ng-container>
+
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef> Full Name </th>
+          <td mat-cell *matCellDef="let user"> 
+            {{user.firstName ? (user.firstName + ' ' + (user.lastName || '')) : '-'}} 
+          </td>
+        </ng-container>
+
+        <!-- Team Column -->
+        <ng-container matColumnDef="team">
+          <th mat-header-cell *matHeaderCellDef> Primary Team </th>
+          <td mat-cell *matCellDef="let user">
+            <span class="badge team-badge" *ngIf="user.primaryTeamName">
+              {{user.primaryTeamName}}
+            </span>
+            <span class="no-badge" *ngIf="!user.primaryTeamName">Unassigned</span>
+          </td>
+        </ng-container>
+
+        <!-- Role Column -->
+        <ng-container matColumnDef="role">
+          <th mat-header-cell *matHeaderCellDef> Realm Role </th>
+          <td mat-cell *matCellDef="let user"> 
+            <span class="badge role-badge" [ngClass]="user.role?.toLowerCase() || 'developer'">
+              {{user.role || 'DEVELOPER'}}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef> Actions </th>
+          <td mat-cell *matCellDef="let user">
+            <div class="action-buttons">
+              <button mat-icon-button color="accent" (click)="openEdit(user)" title="Edit User">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deleteUser(user)" title="Delete User">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+      </table>
+
+      <div class="no-data" *ngIf="filteredUsers.length === 0">
+        <mat-icon class="no-data-icon">search_off</mat-icon>
+        <p>No matching users found.</p>
+      </div>
+    </div>
+  </mat-card>
+
+  <!-- Edit Overlay Modal -->
+  <div class="edit-overlay" *ngIf="showEditModal">
+    <div class="glowing-orb orb-1"></div>
+    <div class="glowing-orb orb-2"></div>
+    
+    <mat-card class="edit-modal glass-panel animate-fade-in">
+      <div class="modal-header">
+        <h2>Edit User Profile</h2>
+        <button mat-icon-button class="btn-close" (click)="closeEdit()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <form (ngSubmit)="saveEdit()" #editUserForm="ngForm" class="edit-form">
+          <div class="form-info-banner">
+            <p><strong>Username:</strong> {{editingUser?.username}}</p>
+          </div>
+          
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>First Name</mat-label>
+              <input matInput name="editFirstName" [(ngModel)]="editForm.firstName" placeholder="First Name">
+            </mat-form-field>
+            
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Last Name</mat-label>
+              <input matInput name="editLastName" [(ngModel)]="editForm.lastName" placeholder="Last Name">
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email Address</mat-label>
+            <input matInput type="email" name="editEmail" [(ngModel)]="editForm.email" required placeholder="user@company.com">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Assigned Team</mat-label>
+            <mat-select name="editTeam" [(ngModel)]="editForm.primaryTeamId">
+              <mat-option value="">None / Unassigned</mat-option>
+              <mat-option *ngFor="let team of teams" [value]="team.id">
+                {{ team.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Realm Role Mapping</mat-label>
+            <mat-select name="editRole" [(ngModel)]="editForm.role" required>
+              <mat-option *ngFor="let r of roles" [value]="r.value">
+                {{ r.label }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="modal-actions">
+            <button mat-button type="button" class="btn-cancel" (click)="closeEdit()">CANCEL</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="loading" class="btn-save">
+              <span>SAVE CHANGES</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </mat-card>
+  </div>
+</div>

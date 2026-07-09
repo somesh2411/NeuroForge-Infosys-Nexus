@@ -1,0 +1,131 @@
+.header-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.project-selector-container {
+  margin-top: 1.5rem;
+}
+
+.project-select-field {
+  min-width: 250px;
+}
+
+.project-select-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  display: none !important;
+}
+
+.form-card {
+  max-width: 650px;
+  margin: 0 auto;
+}
+
+.sprint-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  padding: 1rem 0;
+}
+
+.date-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.sprints-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.sprint-card {
+  transition: var(--transition);
+}
+.sprint-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0, 229, 255, 0.25) !important;
+}
+
+.sprint-card mat-card-content {
+  padding: 1.5rem !important;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.sprint-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.sprint-card-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.sprint-goal-section {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+}
+
+.sprint-goal-section h4 {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+  letter-spacing: 0.5px;
+}
+
+.sprint-goal-section p {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.sprint-details-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 0.8rem;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.meta-item mat-icon {
+  font-size: 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--text-muted);
+}
+
+.action-icons {
+  display: flex;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 4rem 0;
+}

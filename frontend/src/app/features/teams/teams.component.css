@@ -1,0 +1,246 @@
+.form-card {
+  max-width: 650px;
+  margin: 0 auto;
+}
+
+.team-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  padding: 1rem 0;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.teams-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.teams-list-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  max-height: 75vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.team-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 1.2rem;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.team-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.active-card {
+  border-color: var(--primary) !important;
+  box-shadow: 0 4px 20px var(--primary-glow) !important;
+}
+
+.team-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.team-code {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(138, 43, 226, 0.15);
+  color: var(--primary);
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.team-card-header h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.team-desc {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.2rem;
+  line-height: 1.4;
+}
+
+.team-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 0.8rem;
+}
+
+.member-count {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.member-count mat-icon {
+  font-size: 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.teams-detail-panel {
+  position: sticky;
+  top: 2rem;
+}
+
+.detail-card {
+  padding: 0.8rem;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.2rem;
+}
+
+.detail-header h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-top: 0.4rem;
+}
+
+.detail-desc {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 2rem;
+}
+
+.lead-section {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-color);
+  padding: 1.2rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 2rem;
+}
+
+.lead-section h4 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+  letter-spacing: 0.5px;
+}
+
+.lead-info {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.members-list-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.members-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.6rem;
+}
+
+.members-header h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.empty-roster {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.88rem;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+.roster-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  padding: 0.8rem 1.2rem;
+  border-radius: var(--radius-sm);
+}
+
+.member-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.member-avatar {
+  color: var(--text-muted);
+}
+
+.add-member-control {
+  margin-top: 2rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  padding: 1.2rem;
+  border-radius: var(--radius-sm);
+}
+
+.add-member-control h4 {
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+}
+
+.add-member-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.add-member-select {
+  flex-grow: 1;
+}
+
+.add-member-select ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  display: none !important;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 4rem 0;
+}

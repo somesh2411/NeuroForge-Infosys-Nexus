@@ -1,0 +1,31 @@
+# Java Build Outputs
+**/target/
+*.class
+
+# Node / Angular Build Outputs
+**/node_modules/
+**/.angular/
+**/dist/
+
+# IDE files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Embedded Maven Binary directory
+/maven/
+
+# Operating system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Temporary files and logs
+*.log
+tmp/
+temp/

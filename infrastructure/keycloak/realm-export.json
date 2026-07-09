@@ -1,0 +1,158 @@
+{
+  "id": "neuroforge-realm",
+  "realm": "neuroforge-realm",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": false,
+  "rememberMe": true,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN",
+        "description": "System Administrator"
+      },
+      {
+        "name": "ORGANIZATION_OWNER",
+        "description": "Organization Owner"
+      },
+      {
+        "name": "TEAM_LEAD",
+        "description": "Team Lead / Scrum Master"
+      },
+      {
+        "name": "DEVELOPER",
+        "description": "Software Developer"
+      },
+      {
+        "name": "QA",
+        "description": "Quality Assurance Engineer"
+      },
+      {
+        "name": "STAKEHOLDER",
+        "description": "Stakeholder"
+      }
+    ]
+  },
+  "groups": [],
+  "defaultRoles": [
+    "DEVELOPER"
+  ],
+  "requiredCredentials": [
+    "password"
+  ],
+  "clients": [
+    {
+      "clientId": "frontend-client",
+      "name": "NeuroForge Frontend",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "bearerOnly": false,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "redirectUris": [
+        "http://localhost:4200/*",
+        "http://127.0.0.1:4200/*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "web-origins",
+        "role_list",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "gateway-client",
+      "name": "NeuroForge Gateway",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "super-secret-gateway-key-123456",
+      "bearerOnly": false,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [
+        "http://localhost:8080/*"
+      ],
+      "webOrigins": [],
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "web-origins",
+        "role_list",
+        "roles",
+        "profile",
+        "email"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "e838f7d9-c000-47bf-a111-111111111111",
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@neuroforge.com",
+      "firstName": "Admin",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN"
+      ]
+    },
+    {
+      "id": "e838f7d9-c000-47bf-a111-222222222222",
+      "username": "lead",
+      "enabled": true,
+      "email": "lead@neuroforge.com",
+      "firstName": "Team",
+      "lastName": "Lead",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "TEAM_LEAD"
+      ]
+    },
+    {
+      "id": "e838f7d9-c000-47bf-a111-333333333333",
+      "username": "dev",
+      "enabled": true,
+      "email": "dev@neuroforge.com",
+      "firstName": "Dev",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "DEVELOPER"
+      ]
+    }
+  ]
+}

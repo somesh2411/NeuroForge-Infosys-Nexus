@@ -60,7 +60,6 @@ public class BuildServiceImpl implements BuildService {
     }
 
     @Override
-    @Transactional
     public BuildResponse triggerBuild(String pipelineId, String triggerType) {
         log.info("Triggering build for pipeline: {}", pipelineId);
         Pipeline pipeline = pipelineRepository.findById(pipelineId)

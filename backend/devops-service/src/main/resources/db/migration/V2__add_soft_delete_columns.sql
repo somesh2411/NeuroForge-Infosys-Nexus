@@ -1,0 +1,25 @@
+-- Add soft delete support columns to DevOps database tables
+
+ALTER TABLE environments ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE environments ADD COLUMN deleted_at TIMESTAMP;
+ALTER TABLE environments ADD COLUMN deleted_by VARCHAR(100);
+
+ALTER TABLE repositories ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE repositories ADD COLUMN deleted_at TIMESTAMP;
+ALTER TABLE repositories ADD COLUMN deleted_by VARCHAR(100);
+
+ALTER TABLE pipelines ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE pipelines ADD COLUMN deleted_at TIMESTAMP;
+ALTER TABLE pipelines ADD COLUMN deleted_by VARCHAR(100);
+
+ALTER TABLE builds ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE builds ADD COLUMN deleted_at TIMESTAMP;
+ALTER TABLE builds ADD COLUMN deleted_by VARCHAR(100);
+
+ALTER TABLE deployments ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE deployments ADD COLUMN deleted_at TIMESTAMP;
+ALTER TABLE deployments ADD COLUMN deleted_by VARCHAR(100);
+
+ALTER TABLE releases ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE releases ADD COLUMN deleted_at TIMESTAMP;
+ALTER TABLE releases ADD COLUMN deleted_by VARCHAR(100);

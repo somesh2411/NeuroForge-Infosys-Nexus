@@ -1,0 +1,779 @@
+<div class="devops-container">
+  <!-- Top Control Bar -->
+  <div class="devops-header">
+    <div class="header-left">
+      <h1>DevOps Pipeline Center</h1>
+      <p class="subtitle">Orchestrate builds, trace stage-level metrics, and execute target environment deployments.</p>
+    </div>
+    
+    <div class="header-right">
+      <div class="project-selector">
+        <label for="projectSelect"><i class="material-icons">folder</i> Project:</label>
+        <select id="projectSelect" [(ngModel)]="selectedProject" (change)="onProjectChange()">
+          <option *ngFor="let p of projects" [ngValue]="p">{{ p.name }} ({{ p.key }})</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" (click)="openCreatePipeline()" *ngIf="authService.hasAnyRole(['ADMIN', 'ORGANIZATION_OWNER', 'TEAM_LEAD'])">
+        <i class="material-icons">add</i> Create Pipeline
+      </button>
+    </div>
+  </div>
+
+  <!-- Workspace Navigation Tabs -->
+  <div class="workspace-tabs">
+    <button [class.active]="activeTab === 0" (click)="activeTab = 0"><i class="material-icons">dashboard</i> Analytics Dashboard</button>
+    <button [class.active]="activeTab === 1" (click)="activeTab = 1"><i class="material-icons">settings</i> Pipeline Configurations</button>
+    <button [class.active]="activeTab === 2" (click)="activeTab = 2"><i class="material-icons">visibility</i> Live Visualizer & Logs</button>
+    <button [class.active]="activeTab === 3" (click)="activeTab = 3"><i class="material-icons">rocket_launch</i> Deployments & Rollbacks</button>
+    <button [class.active]="activeTab === 4" (click)="activeTab = 4"><i class="material-icons">inventory_2</i> Release Catalog</button>
+    <button [class.active]="activeTab === 5" (click)="activeTab = 5"><i class="material-icons">compare</i> Build Comparator</button>
+    <button [class.active]="activeTab === 6" (click)="activeTab = 6"><i class="material-icons">history</i> Audit Trail</button>
+  </div>
+
+  <!-- Loader overlay -->
+  <div class="loading-overlay" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Connecting to pipeline database...</p>
+  </div>
+
+  <!-- MAIN CONTENT TABS -->
+  <div class="tab-content" *ngIf="!loading">
+    
+    <!-- TAB 0: ANALYTICS DASHBOARD -->
+    <div class="dashboard-tab" *ngIf="activeTab === 0">
+      <div class="metrics-grid" *ngIf="metrics">
+        <div class="metric-card">
+          <div class="card-icon blue"><i class="material-icons">build</i></div>
+          <div class="card-info">
+            <span class="value">{{ metrics.totalBuilds }}</span>
+            <span class="label">Total Pipelines Run</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="card-icon green"><i class="material-icons">check_circle</i></div>
+          <div class="card-info">
+            <span class="value">{{ metrics.buildSuccessRate | number:'1.1-1' }}%</span>
+            <span class="label">Build Success Rate</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="card-icon yellow"><i class="material-icons">schedule</i></div>
+          <div class="card-info">
+            <span class="value">{{ metrics.averageBuildDurationSec | number:'1.1-1' }}s</span>
+            <span class="label">Avg Build Duration</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="card-icon purple"><i class="material-icons">cloud_upload</i></div>
+          <div class="card-info">
+            <span class="value">{{ metrics.totalDeployments }}</span>
+            <span class="label">Total Deployments</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-body">
+        <!-- SVG Success/Failure Trend chart -->
+        <div class="chart-container glass-panel">
+          <h3>Build execution trends (Success vs Failures)</h3>
+          <div class="chart-wrapper">
+            <div class="empty-state" *ngIf="!metrics || !metrics.buildTrends || metrics.buildTrends.length === 0">
+              <i class="material-icons">analytics</i>
+              <p>No historical build trends recorded yet. Trigger a pipeline build to populate graphs.</p>
+            </div>
+            
+            <svg viewBox="0 0 600 220" width="100%" height="220" *ngIf="metrics && metrics.buildTrends && metrics.buildTrends.length > 0">
+              <!-- Grid Lines -->
+              <line x1="40" y1="40" x2="560" y2="40" stroke="#1e293b" stroke-dasharray="4" />
+              <line x1="40" y1="90" x2="560" y2="90" stroke="#1e293b" stroke-dasharray="4" />
+              <line x1="40" y1="140" x2="560" y2="140" stroke="#1e293b" stroke-dasharray="4" />
+              <line x1="40" y1="180" x2="560" y2="180" stroke="#334155" />
+              
+              <!-- Success bars -->
+              <g *ngFor="let t of metrics.buildTrends; let i = index">
+                <!-- Calc x coordinate -->
+                <rect 
+                  [attr.x]="50 + i * (500 / metrics.buildTrends.length)" 
+                  [attr.y]="180 - (t.success * 20)" 
+                  width="12" 
+                  [attr.height]="t.success * 20" 
+                  fill="#10b981" 
+                  rx="2"
+                />
+                <!-- Failure bars -->
+                <rect 
+                  [attr.x]="65 + i * (500 / metrics.buildTrends.length)" 
+                  [attr.y]="180 - (t.failed * 20)" 
+                  width="12" 
+                  [attr.height]="t.failed * 20" 
+                  fill="#ef4444" 
+                  rx="2"
+                />
+                <!-- Date Label -->
+                <text 
+                  [attr.x]="58 + i * (500 / metrics.buildTrends.length)" 
+                  y="198" 
+                  fill="#94a3b8" 
+                  font-size="10" 
+                  text-anchor="middle"
+                >{{ t.date }}</text>
+              </g>
+            </svg>
+            <div class="chart-legend" *ngIf="metrics && metrics.buildTrends && metrics.buildTrends.length > 0">
+              <span class="legend-item"><span class="dot green"></span> Successes</span>
+              <span class="legend-item"><span class="dot red"></span> Failures</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Environments Status panel -->
+        <div class="env-status-panel glass-panel">
+          <div class="panel-header">
+            <h3>Environment Cluster Status</h3>
+            <button class="btn btn-secondary btn-sm" (click)="openCreateEnvironment()" *ngIf="authService.hasAnyRole(['ADMIN', 'ORGANIZATION_OWNER'])">
+              <i class="material-icons">settings</i> Configure Env
+            </button>
+          </div>
+          
+          <div class="env-grid">
+            <div class="env-card" *ngFor="let env of metrics?.envStatus" [class.disabled]="!env.enabled">
+              <div class="env-card-header">
+                <span class="env-name">{{ env.envName }}</span>
+                <span class="badge" [class.green]="env.lastDeployStatus === 'SUCCESSFUL'" [class.red]="env.lastDeployStatus === 'FAILED'" [class.gray]="env.lastDeployStatus === 'NO_DEPLOYMENTS'">
+                  {{ env.lastDeployStatus }}
+                </span>
+              </div>
+              <div class="env-card-body">
+                <p class="env-detail"><span>Active Version:</span> {{ env.activeVersion }}</p>
+                <p class="env-detail"><span>Node Health:</span> <span class="health-indicator" [class.green]="env.enabled"></span> {{ env.enabled ? 'Online' : 'Disabled' }}</p>
+              </div>
+              <div class="env-card-actions" *ngIf="authService.hasAnyRole(['ADMIN', 'ORGANIZATION_OWNER'])">
+                <button class="btn btn-icon" (click)="openEditEnvironment({id: env.envId, name: env.envName, description: '', enabled: env.enabled})" title="Edit"><i class="material-icons">edit</i></button>
+                <button class="btn btn-icon" (click)="deleteEnvironment(env.envId)" title="Delete"><i class="material-icons">delete</i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 1: PIPELINE CONFIGURATIONS -->
+    <div class="pipelines-tab" *ngIf="activeTab === 1">
+      <div class="glass-panel">
+        <div class="panel-header">
+          <h3>Active Project Pipelines</h3>
+          <p class="panel-desc">Configurations defined to compile, package, analyze and containerize repository components.</p>
+        </div>
+        
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Pipeline Name</th>
+              <th>Git Repository & Branch</th>
+              <th>Build Tool</th>
+              <th>Integrator Engine</th>
+              <th>Last Status</th>
+              <th>Integration Hook</th>
+              <th>State</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of pipelines">
+              <td>
+                <span class="pipeline-title">{{ p.name }}</span>
+                <span class="template-tag" *ngIf="p.pipelineTemplate">{{ p.pipelineTemplate }}</span>
+              </td>
+              <td>
+                <div class="git-info">
+                  <span class="url" [title]="p.repositoryUrl"><i class="material-icons">link</i> {{ p.repositoryName || 'git-repo' }}</span>
+                  <span class="branch"><i class="material-icons">fork_left</i> {{ p.branch }}</span>
+                </div>
+              </td>
+              <td><span class="badge blue">{{ p.buildTool }}</span></td>
+              <td><span class="badge purple">{{ p.pipelineType }}</span></td>
+              <td>
+                <span class="status-indicator" [class.green]="p.status === 'SUCCESSFUL'" [class.red]="p.status === 'FAILING'" [class.yellow]="p.status === 'RUNNING'"></span>
+                {{ p.status }}
+              </td>
+              <td>
+                <span class="hook-desc" *ngIf="p.pipelineType === 'JENKINS'">Job: {{ p.jenkinsJobName || 'None' }}</span>
+                <span class="hook-desc" *ngIf="p.pipelineType === 'GITHUB_ACTIONS'">Path: {{ p.githubWorkflowPath || 'None' }}</span>
+                <span class="hook-desc" *ngIf="p.pipelineType === 'MOCK'">Simulated Cron Hook</span>
+              </td>
+              <td>
+                <button class="btn-toggle" [class.on]="p.enabled" (click)="togglePipeline(p)" *ngIf="authService.hasAnyRole(['ADMIN', 'ORGANIZATION_OWNER', 'TEAM_LEAD'])">
+                  <span class="slider"></span>
+                </button>
+                <span class="state-text">{{ p.enabled ? 'Enabled' : 'Disabled' }}</span>
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn btn-success btn-sm" (click)="triggerPipelineBuild(p)" [disabled]="!p.enabled" *ngIf="authService.hasAnyRole(['ADMIN', 'ORGANIZATION_OWNER', 'TEAM_LEAD'])">
+                    <i class="material-icons">play_arrow</i> Trigger
+                  </button>
+                  <button class="btn btn-icon" (click)="openEditPipeline(p)" *ngIf="authService.hasAnyRole(['ADMIN', 'ORGANIZATION_OWNER', 'TEAM_LEAD'])"><i class="material-icons">edit</i></button>
+                  <button class="btn btn-icon" (click)="deletePipeline(p.id)" *ngIf="authService.hasAnyRole(['ADMIN', 'ORGANIZATION_OWNER', 'TEAM_LEAD'])"><i class="material-icons">delete</i></button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="pipelines.length === 0">
+              <td colspan="8" class="text-center">No pipelines configured. Click "Create Pipeline" to initialize.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: LIVE STAGE VISUALIZER & LOGS -->
+    <div class="visualizer-tab" *ngIf="activeTab === 2">
+      <div class="visualizer-layout">
+        <!-- Sidebar Builds List -->
+        <div class="builds-sidebar glass-panel">
+          <h3>Build History runs</h3>
+          
+          <div class="sidebar-project-picker">
+            <label for="pipelineSelector">Select Pipeline:</label>
+            <select id="pipelineSelector" [(ngModel)]="selectedPipeline" (change)="loadBuildsBySelectedPipeline()">
+              <option [ngValue]="undefined">-- Select Pipeline --</option>
+              <option *ngFor="let p of pipelines" [ngValue]="p">{{ p.name }}</option>
+            </select>
+          </div>
+
+          <div class="builds-list">
+            <div 
+              class="build-item" 
+              *ngFor="let b of pipelineBuilds" 
+              [class.active]="selectedBuildDetails?.id === b.id"
+              (click)="drilldownBuildLogs(b)"
+            >
+              <div class="build-item-header">
+                <span class="number">#{{ b.buildNumber }}</span>
+                <span class="status-tag" [class.green]="b.status === 'SUCCESS'" [class.red]="b.status === 'FAILED'" [class.yellow]="b.status === 'RUNNING' || b.status === 'QUEUED'">
+                  {{ b.status }}
+                </span>
+              </div>
+              <div class="build-item-body">
+                <p><i class="material-icons">fork_left</i> {{ b.branch }}</p>
+                <p class="time" *ngIf="b.startTime"><i class="material-icons">schedule</i> {{ b.startTime | date:'MM/dd HH:mm' }}</p>
+              </div>
+            </div>
+            <div class="empty-state" *ngIf="pipelineBuilds.length === 0">
+              <p>No builds triggered for this pipeline yet.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stages Live Visualizer and Logs Panel -->
+        <div class="logs-panel glass-panel">
+          <div class="logs-header-info" *ngIf="selectedBuildDetails">
+            <div class="build-title-block">
+              <h2>Execution Run #{{ selectedBuildDetails.buildNumber }}</h2>
+              <p>Triggered by <strong>{{ '@' }}{{ selectedBuildDetails.triggeredBy }}</strong> on branch <strong>{{ selectedBuildDetails.branch }}</strong> (Commit: <code class="commit">{{ selectedBuildDetails.commitId }}</code>)</p>
+            </div>
+            
+            <div class="build-duration-block" *ngIf="selectedBuildDetails.durationMs">
+              <span>Total Duration: <strong>{{ selectedBuildDetails.durationMs / 1000 | number:'1.1-1' }}s</strong></span>
+            </div>
+          </div>
+
+          <!-- Step Progression Flow -->
+          <div class="stages-flow" *ngIf="selectedBuildStages.length > 0">
+            <div class="stage-step" *ngFor="let stage of selectedBuildStages" [class.active]="selectedStageName === stage.name" (click)="selectStage(stage)">
+              <div class="stage-circle" [class.success]="stage.status === 'SUCCESS'" [class.failed]="stage.status === 'FAILED'" [class.running]="stage.status === 'RUNNING'" [class.queued]="stage.status === 'QUEUED'">
+                <i class="material-icons" *ngIf="stage.status === 'SUCCESS'">check_circle</i>
+                <i class="material-icons" *ngIf="stage.status === 'FAILED'">cancel</i>
+                <i class="material-icons loading-icon" *ngIf="stage.status === 'RUNNING'">cached</i>
+                <i class="material-icons" *ngIf="stage.status === 'QUEUED'">schedule</i>
+              </div>
+              <span class="stage-name">{{ stage.name }}</span>
+              <span class="stage-time" *ngIf="stage.durationMs">{{ stage.durationMs / 1000 | number:'1.1-1' }}s</span>
+            </div>
+          </div>
+
+          <!-- Console Terminal Output logs -->
+          <div class="terminal-logs" *ngIf="selectedBuildDetails">
+            <div class="terminal-header">
+              <span class="terminal-title"><i class="material-icons">terminal</i> console_output - {{ selectedStageName }} ({{ selectedBuildDetails.pipelineName }})</span>
+              <span class="terminal-actions">
+                <span class="dot-btn red"></span>
+                <span class="dot-btn yellow"></span>
+                <span class="dot-btn green"></span>
+              </span>
+            </div>
+            <pre class="terminal-body">{{ selectedStageLog }}</pre>
+          </div>
+
+          <div class="empty-state" *ngIf="!selectedBuildDetails">
+            <i class="material-icons">visibility</i>
+            <h2>Select a build run to visualise stage execution and fetch logs.</h2>
+            <p>You can choose pipelines from the left panel to drill down into their execution histories.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: DEPLOYMENTS & ROLLBACKS -->
+    <div class="deployments-tab" *ngIf="activeTab === 3">
+      <div class="glass-panel">
+        <div class="panel-header">
+          <h3>Deployments & Infrastructure rollback</h3>
+          <p class="panel-desc">Deploy successful artifacts to preconfigured environments (Dev, QA, Staging, Prod) and manage emergency version rollbacks.</p>
+          <button class="btn btn-primary" (click)="openDeployModal()" *ngIf="authService.hasAnyRole(['ADMIN', 'ORGANIZATION_OWNER', 'TEAM_LEAD'])">
+            <i class="material-icons">rocket_launch</i> Deploy Artifact
+          </button>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Deployment ID</th>
+              <th>Target Environment</th>
+              <th>Pipeline Origin</th>
+              <th>Deploy Version</th>
+              <th>Triggered By</th>
+              <th>Deployed At</th>
+              <th>Duration</th>
+              <th>Status</th>
+              <th>Rollback Gate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let d of deployments">
+              <td><code>{{ d.id }}</code></td>
+              <td><strong>{{ d.environmentName }}</strong></td>
+              <td>{{ d.pipelineName }} (Build #{{ d.buildNumber }})</td>
+              <td><code>{{ d.version }}</code></td>
+              <td>{{ '@' }}{{ d.deployedBy }}</td>
+              <td>{{ d.deployedAt | date:'yyyy-MM-dd HH:mm:ss' }}</td>
+              <td>{{ d.durationMs ? (d.durationMs / 1000 | number:'1.1-1') + 's' : '-' }}</td>
+              <td>
+                <span class="badge" [class.green]="d.status === 'SUCCESSFUL'" [class.red]="d.status === 'FAILED'" [class.orange]="d.status === 'ROLLED_BACK'">
+                  {{ d.status }}
+                </span>
+              </td>
+              <td>
+                <button 
+                  class="btn btn-danger btn-sm" 
+                  [disabled]="!d.rollbackAvailable" 
+                  (click)="openRollbackModal(d)"
+                  *ngIf="authService.hasAnyRole(['ADMIN', 'ORGANIZATION_OWNER', 'TEAM_LEAD'])"
+                >
+                  <i class="material-icons">replay</i> Rollback
+                </button>
+                <span *ngIf="d.status === 'ROLLED_BACK' && d.rollbackReason" class="rollback-reason" [title]="d.rollbackReason">
+                  Reason: {{ d.rollbackReason }}
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="deployments.length === 0">
+              <td colspan="9" class="text-center">No deployment actions executed. Click "Deploy Artifact" to release to an environment.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 4: RELEASE CATALOG -->
+    <div class="releases-tab" *ngIf="activeTab === 4">
+      <div class="glass-panel">
+        <div class="panel-header">
+          <h3>Enterprise Release catalog</h3>
+          <p class="panel-desc">Semantic versioning registries, deployment artifacts, changelogs, and release approval state gates.</p>
+          <button class="btn btn-primary" (click)="openCreateRelease()" *ngIf="authService.hasAnyRole(['ADMIN', 'ORGANIZATION_OWNER', 'TEAM_LEAD'])">
+            <i class="material-icons">inventory_2</i> Draft Release
+          </button>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Semantic Version</th>
+              <th>Release Name</th>
+              <th>Source Pipeline</th>
+              <th>Status State</th>
+              <th>Release Notes</th>
+              <th>Released By</th>
+              <th>Published At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of releases">
+              <td><span class="version-code">{{ r.version }}</span></td>
+              <td><strong>{{ r.name }}</strong></td>
+              <td>{{ r.pipelineName }} (Build #{{ r.buildNumber }})</td>
+              <td>
+                <span class="badge" [class.gray]="r.status === 'DRAFT'" [class.blue]="r.status === 'TESTING'" [class.green]="r.status === 'APPROVED' || r.status === 'RELEASED'" [class.orange]="r.status === 'ARCHIVED'">
+                  {{ r.status }}
+                </span>
+              </td>
+              <td><span class="notes-text" [title]="r.releaseNotes">{{ r.releaseNotes || 'No notes.' }}</span></td>
+              <td>{{ r.releasedBy ? '@' + r.releasedBy : 'Pending' }}</td>
+              <td>{{ r.releasedAt ? (r.releasedAt | date:'yyyy-MM-dd HH:mm') : 'Draft Phase' }}</td>
+              <td>
+                <div class="row-actions">
+                  <button 
+                    class="btn btn-success btn-sm" 
+                    [disabled]="r.status === 'RELEASED'" 
+                    (click)="publishReleaseDirectly(r)"
+                    *ngIf="authService.hasAnyRole(['ADMIN', 'ORGANIZATION_OWNER', 'TEAM_LEAD'])"
+                  >
+                    <i class="material-icons">publish</i> Publish
+                  </button>
+                  <button class="btn btn-icon" (click)="openEditRelease(r)" *ngIf="authService.hasAnyRole(['ADMIN', 'ORGANIZATION_OWNER', 'TEAM_LEAD'])"><i class="material-icons">edit</i></button>
+                  <button class="btn btn-icon" (click)="deleteRelease(r.id)" *ngIf="authService.hasAnyRole(['ADMIN', 'ORGANIZATION_OWNER', 'TEAM_LEAD'])"><i class="material-icons">delete</i></button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="releases.length === 0">
+              <td colspan="8" class="text-center">No release entries registered. Click "Draft Release" to begin release cataloging.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 5: BUILD COMPARATOR -->
+    <div class="comparator-tab" *ngIf="activeTab === 5">
+      <div class="comparator-layout">
+        <!-- Input Selector panel -->
+        <div class="compare-selector glass-panel">
+          <h3>Select Builds to Compare</h3>
+          <form [formGroup]="compareForm" (ngSubmit)="submitCompare()">
+            <div class="form-group">
+              <label for="compareBuildA">Build A (Baseline):</label>
+              <select id="compareBuildA" formControlName="buildIdA">
+                <option value="">-- Choose Build Run --</option>
+                <option *ngFor="let b of recentBuilds" [value]="b.id">#{{ b.buildNumber }} - {{ b.pipelineName }} ({{ b.status }})</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="compareBuildB">Build B (Comparison):</label>
+              <select id="compareBuildB" formControlName="buildIdB">
+                <option value="">-- Choose Build Run --</option>
+                <option *ngFor="let b of recentBuilds" [value]="b.id">#{{ b.buildNumber }} - {{ b.pipelineName }} ({{ b.status }})</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" [disabled]="compareForm.invalid">
+              <i class="material-icons">compare</i> Compare Build metrics
+            </button>
+          </form>
+        </div>
+
+        <!-- Result details compare grid -->
+        <div class="compare-results glass-panel" *ngIf="compareResult">
+          <h3>Compare Output details</h3>
+          
+          <div class="compare-grid">
+            <div class="compare-column baseline">
+              <h4>Baseline (Build #{{ compareResult.buildA.buildNumber }})</h4>
+              <p class="metric">Status: <span class="badge" [class.green]="compareResult.buildA.status === 'SUCCESS'" [class.red]="compareResult.buildA.status === 'FAILED'">{{ compareResult.buildA.status }}</span></p>
+              <p class="metric">Duration: <strong>{{ (compareResult.buildA.durationMs || 0) / 1000 | number:'1.1-1' }}s</strong></p>
+              <p class="metric">Commit SHA: <code>{{ compareResult.buildA.commitId }}</code></p>
+              <p class="metric">Tests Passed: <strong>{{ compareResult.buildA.testsPassed }} / {{ compareResult.buildA.testsTotal }}</strong></p>
+            </div>
+            
+            <div class="compare-column target">
+              <h4>Comparison (Build #{{ compareResult.buildB.buildNumber }})</h4>
+              <p class="metric">Status: <span class="badge" [class.green]="compareResult.buildB.status === 'SUCCESS'" [class.red]="compareResult.buildB.status === 'FAILED'">{{ compareResult.buildB.status }}</span></p>
+              <p class="metric">Duration: <strong>{{ (compareResult.buildB.durationMs || 0) / 1000 | number:'1.1-1' }}s</strong></p>
+              <p class="metric">Commit SHA: <code>{{ compareResult.buildB.commitId }}</code></p>
+              <p class="metric">Tests Passed: <strong>{{ compareResult.buildB.testsPassed }} / {{ compareResult.buildB.testsTotal }}</strong></p>
+            </div>
+          </div>
+
+          <div class="comparison-summary glass-panel">
+            <h4>Shifts & Differences</h4>
+            <ul>
+              <li>Status Match: <strong>{{ compareResult.statusMatch ? 'YES' : 'NO' }}</strong></li>
+              <li>Durational difference: <strong>{{ compareResult.durationDifferenceMs / 1000 | number:'1.1-1' }}s</strong></li>
+              <li>Same Code Commit: <strong>{{ compareResult.commitMatch ? 'YES' : 'NO' }}</strong></li>
+              <li>Test Pass Difference: <strong>{{ compareResult.testCountDifference }} unit tests</strong></li>
+            </ul>
+            <div class="deployment-note">
+              <i class="material-icons">info</i>
+              <p>{{ compareResult.deploymentComparisonNote }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="compare-results glass-panel empty text-center" *ngIf="!compareResult">
+          <i class="material-icons">difference</i>
+          <h3>Configure Baseline and Target builds on the left to trigger a side-by-side metric comparison.</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: AUDIT TRAIL -->
+    <div class="audits-tab" *ngIf="activeTab === 6">
+      <div class="glass-panel">
+        <div class="panel-header">
+          <h3>DevOps Audit Logs Timeline</h3>
+          <p class="panel-desc">Read-only event trace logs representing pipeline configurations, rollbacks, and release approvals.</p>
+        </div>
+
+        <div class="timeline">
+          <div class="timeline-item" *ngFor="let audit of auditLogs">
+            <div class="timeline-icon">
+              <i class="material-icons" *ngIf="audit.eventType.includes('CREATE') || audit.eventType.includes('TRIGGER')">add_circle</i>
+              <i class="material-icons text-danger" *ngIf="audit.eventType.includes('DELETE') || audit.eventType.includes('FAILED')">error</i>
+              <i class="material-icons text-success" *ngIf="audit.eventType.includes('SUCCESS') || audit.eventType.includes('COMPLETED')">check_circle</i>
+              <i class="material-icons text-warning" *ngIf="audit.eventType.includes('ROLLBACK')">replay</i>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <span class="event-type">{{ audit.eventType }}</span>
+                <span class="timestamp">{{ audit.timestamp | date:'yyyy-MM-dd HH:mm:ss' }}</span>
+              </div>
+              <p class="message">{{ audit.message }}</p>
+              <span class="actor"><i class="material-icons">person</i> By {{ '@' }}{{ audit.actor }}</span>
+            </div>
+          </div>
+          <div class="empty-state text-center" *ngIf="auditLogs.length === 0">
+            <p>No audit trail logs recorded yet.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================== MODALS & DIALOGS ================== -->
+
+<!-- 1. Pipeline Config Modal -->
+<div class="modal-backdrop" *ngIf="showPipelineModal">
+  <div class="modal-content glass-panel">
+    <div class="modal-header">
+      <h2>{{ isPipelineEdit ? 'Modify Pipeline Settings' : 'Register CI/CD Pipeline' }}</h2>
+      <button class="btn-close" (click)="showPipelineModal = false"><i class="material-icons">close</i></button>
+    </div>
+    
+    <form [formGroup]="pipelineForm" (ngSubmit)="submitPipeline()">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pipeName">Pipeline Name *</label>
+            <input type="text" id="pipeName" formControlName="name" placeholder="e.g. Java Microservice Pipeline">
+          </div>
+          <div class="form-group">
+            <label for="pipeBranch">Git Target Branch *</label>
+            <input type="text" id="pipeBranch" formControlName="branch" placeholder="main">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pipeRepoUrl">Git Repository URL *</label>
+            <input type="text" id="pipeRepoUrl" formControlName="repositoryUrl" placeholder="https://github.com/org/repo.git">
+          </div>
+          <div class="form-group">
+            <label for="pipeRepoName">Git Repository Name</label>
+            <input type="text" id="pipeRepoName" formControlName="repositoryName" placeholder="nexus-backend">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pipeEngine">CICD Integrator Engine *</label>
+            <select id="pipeEngine" formControlName="pipelineType">
+              <option value="MOCK">Mock Simulator</option>
+              <option value="JENKINS">Apache Jenkins Engine</option>
+              <option value="GITHUB_ACTIONS">GitHub Actions Runner</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="pipeTool">Build Tool *</label>
+            <select id="pipeTool" formControlName="buildTool">
+              <option value="MAVEN">Maven (.jar)</option>
+              <option value="NPM">NPM Packages (.tar)</option>
+              <option value="DOCKER">Docker Containers (Image)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pipeTemplate">Predefined Template Preset</label>
+            <select id="pipeTemplate" formControlName="pipelineTemplate">
+              <option value="SPRING_BOOT">Spring Boot Pipeline Template</option>
+              <option value="JAVA_MAVEN">Java Maven Pipeline Template</option>
+              <option value="ANGULAR">Angular NPM Pipeline Template</option>
+              <option value="DOCKER">Docker Container Pipeline Template</option>
+            </select>
+          </div>
+          
+          <div class="form-group" *ngIf="pipelineForm.value.pipelineType === 'JENKINS'">
+            <label for="jenkinsJob">Jenkins Job Target Name</label>
+            <input type="text" id="jenkinsJob" formControlName="jenkinsJobName" placeholder="job/nexus-deploy">
+          </div>
+
+          <div class="form-group" *ngIf="pipelineForm.value.pipelineType === 'GITHUB_ACTIONS'">
+            <label for="githubPath">GitHub Workflow YML Path</label>
+            <input type="text" id="githubPath" formControlName="githubWorkflowPath" placeholder=".github/workflows/deploy.yml">
+          </div>
+        </div>
+
+        <div class="form-group-checkbox">
+          <input type="checkbox" id="pipeEnabled" formControlName="enabled">
+          <label for="pipeEnabled">Enable Pipeline Execution triggers</label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showPipelineModal = false">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="pipelineForm.invalid">Save Configuration</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 2. Environment Config Modal -->
+<div class="modal-backdrop" *ngIf="showEnvModal">
+  <div class="modal-content glass-panel">
+    <div class="modal-header">
+      <h2>{{ isEnvEdit ? 'Modify Environment Settings' : 'Configure Deployment Environment' }}</h2>
+      <button class="btn-close" (click)="showEnvModal = false"><i class="material-icons">close</i></button>
+    </div>
+    
+    <form [formGroup]="envForm" (ngSubmit)="submitEnvironment()">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="envName">Environment Name *</label>
+          <input type="text" id="envName" formControlName="name" placeholder="e.g. Staging Core">
+        </div>
+        <div class="form-group">
+          <label for="envDesc">Description</label>
+          <textarea id="envDesc" formControlName="description" placeholder="Environment purpose details..."></textarea>
+        </div>
+        <div class="form-group-checkbox">
+          <input type="checkbox" id="envEnabled" formControlName="enabled">
+          <label for="envEnabled">Enable deployments to this cluster</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showEnvModal = false">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="envForm.invalid">Save Settings</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 3. Deploy Modal -->
+<div class="modal-backdrop" *ngIf="showDeployModal">
+  <div class="modal-content glass-panel">
+    <div class="modal-header">
+      <h2>Deploy Artifact Packages</h2>
+      <button class="btn-close" (click)="showDeployModal = false"><i class="material-icons">close</i></button>
+    </div>
+    
+    <form [formGroup]="deployForm" (ngSubmit)="submitDeployment()">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="deployEnv">Target Environment Cluster *</label>
+          <select id="deployEnv" formControlName="environmentId">
+            <option value="">-- Choose Environment --</option>
+            <option *ngFor="let env of environments" [value]="env.id" [disabled]="!env.enabled">{{ env.name }} {{ !env.enabled ? '(Disabled)' : '' }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="deployBuild">Successful Pipeline Build *</label>
+          <select id="deployBuild" formControlName="buildId" (change)="onDeployBuildChange($event)">
+            <option *ngFor="let b of deployableBuilds" [value]="b.id">#{{ b.buildNumber }} - {{ b.pipelineName }} (SHA: {{ b.commitId.substring(0, 7) }})</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="deployVersion">Semantic Deploy Version *</label>
+          <input type="text" id="deployVersion" formControlName="version" placeholder="e.g. v1.0.0-b24">
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showDeployModal = false">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="deployForm.invalid">Execute Deployment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 4. Rollback Reason Modal -->
+<div class="modal-backdrop" *ngIf="showRollbackModal">
+  <div class="modal-content glass-panel">
+    <div class="modal-header">
+      <h2>Execute Emergency Rollback</h2>
+      <button class="btn-close" (click)="showRollbackModal = false"><i class="material-icons">close</i></button>
+    </div>
+    <div class="modal-body">
+      <p class="warning-text"><i class="material-icons">warning</i> Warning: This action will roll back the active environment cluster to the previous successful deploy package version. Verify config maps.</p>
+      
+      <div class="form-group">
+        <label for="rollbackReason">Reason for Rollback (Audited) *</label>
+        <textarea id="rollbackReason" [(ngModel)]="rollbackReason" placeholder="e.g. Out of Memory error in v1.0.2 microservices..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="showRollbackModal = false">Cancel</button>
+      <button type="button" class="btn btn-danger" [disabled]="!rollbackReason" (click)="submitRollback()">Trigger Emergency Rollback</button>
+    </div>
+  </div>
+</div>
+
+<!-- 5. Release Modal -->
+<div class="modal-backdrop" *ngIf="showReleaseModal">
+  <div class="modal-content glass-panel">
+    <div class="modal-header">
+      <h2>{{ isReleaseEdit ? 'Edit Release settings' : 'Draft software Release version' }}</h2>
+      <button class="btn-close" (click)="showReleaseModal = false"><i class="material-icons">close</i></button>
+    </div>
+    
+    <form [formGroup]="releaseForm" (ngSubmit)="submitRelease()">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="relVersion">Semantic Version *</label>
+            <input type="text" id="relVersion" formControlName="version" placeholder="e.g. 1.0.0">
+          </div>
+          <div class="form-group">
+            <label for="relName">Release Title Name *</label>
+            <input type="text" id="relName" formControlName="name" placeholder="e.g. Summer Sprint Stable Release">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="relBuild">Successful Pipeline Build *</label>
+            <select id="relBuild" formControlName="buildId">
+              <option *ngFor="let b of releaseBuilds" [value]="b.id">#{{ b.buildNumber }} - {{ b.pipelineName }}</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="relStatus">Catalog Status State *</label>
+            <select id="relStatus" formControlName="status">
+              <option value="DRAFT">DRAFT</option>
+              <option value="TESTING">TESTING STAGE</option>
+              <option value="APPROVED">APPROVED (Awaiting Publishing)</option>
+              <option value="RELEASED">RELEASED (Published)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="relNotes">Changelog Release Notes</label>
+          <textarea id="relNotes" formControlName="releaseNotes" placeholder="Write bugfixes, features, and config improvements."></textarea>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showReleaseModal = false">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="releaseForm.invalid">Save Catalog Release</button>
+      </div>
+    </form>
+  </div>
+</div>

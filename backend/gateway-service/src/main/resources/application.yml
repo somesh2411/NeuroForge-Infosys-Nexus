@@ -23,6 +23,10 @@ spring:
           uri: http://localhost:8083
           predicates:
             - Path=/api/v1/sprints/**, /api/v1/tasks/**, /api/v1/blockers/**, /api/v1/comments/**, /api/v1/analytics/**
+        - id: devops-service
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/v1/pipelines/**, /api/v1/builds/**, /api/v1/deployments/**, /api/v1/releases/**, /api/v1/devops-analytics/**, /api/v1/devops-repositories/**, /api/v1/devops-environments/**
       globalcors:
         cors-configurations:
           '[/**]':

@@ -23,6 +23,11 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'devops',
+    loadComponent: () => import('./features/devops/devops.component').then(m => m.DevOpsComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: 'login',
     loadComponent: () => import('./features/login/login.component').then(m => m.LoginComponent)
   },

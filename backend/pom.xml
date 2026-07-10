@@ -35,6 +35,7 @@
         <module>user-service</module>
         <module>project-service</module>
         <module>sprint-service</module>
+        <module>devops-service</module>
     </modules>
 
     <dependencyManagement>

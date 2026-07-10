@@ -27,6 +27,11 @@
         <span matListItemTitle>Sprint Planning</span>
       </a>
 
+      <a mat-list-item routerLink="/devops" routerLinkActive="active-nav">
+        <mat-icon matListItemIcon>rocket_launch</mat-icon>
+        <span matListItemTitle>DevOps CI/CD</span>
+      </a>
+
       <!-- Admin Specific Links -->
       <a mat-list-item routerLink="/admin/users" routerLinkActive="active-nav" *ngIf="authService.hasRole('ADMIN')">
         <mat-icon matListItemIcon>admin_panel_settings</mat-icon>
@@ -35,7 +40,7 @@
     </mat-nav-list>
 
     <div class="sidenav-footer">
-      <span class="version-label">v1.0.0 (Milestone 1)</span>
+      <span class="version-label">v3.0.0 (Milestone 3)</span>
     </div>
   </mat-sidenav>
 

@@ -194,6 +194,10 @@ export class AuthService {
     return this.getRoles().includes(role);
   }
 
+  hasAnyRole(roles: string[]): boolean {
+    return roles.some(role => this.hasRole(role));
+  }
+
   private async syncProfile(): Promise<void> {
     const body = {
       id: this.getUserId(),
